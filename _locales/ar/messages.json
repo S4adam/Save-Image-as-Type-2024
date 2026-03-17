@@ -29,6 +29,18 @@
   "errorOnLoading": {
     "message": "حدث خطأ أثناء تحميل الصورة"
   },
+  "permissionTitle": {
+    "message": "الإذن مطلوب"
+  },
+  "permissionExplanation": {
+    "message": "يحتاج هذا الامتداد إلى إذن للوصول إلى الصور على مواقع الويب حتى يتمكن من حفظها بالتنسيق الذي تختاره."
+  },
+  "permissionGrant": {
+    "message": "منح الإذن"
+  },
+  "permissionDenied": {
+    "message": "تم رفض الإذن. يمكنك منحه لاحقًا من القائمة السياقية للامتداد."
+  },
   "optDownloadInstantly": {
     "message": "تنزيل الصور دون مربع حوار تأكيد"
   },

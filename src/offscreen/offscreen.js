@@ -1,19 +1,12 @@
-var workAsContent, contentPort, listened, handleMessages;
+const ALLOWED_TYPES = ['jpg', 'png', 'webp', 'gif'];
 
-if (!listened) {
-    init();
-    listened = true;
-}
+init();
 
 function init() {
-    handleMessages = async (message) => {
+    chrome.runtime.onMessage.addListener(async (message) => {
         let { op, target, filename, src, type } = message;
-        if (target !== 'offscreen' && target !== 'content') {
+        if (target !== 'offscreen') {
             return false;
-        }
-        if (contentPort) {
-            contentPort.disconnect();
-            contentPort = null;
         }
         switch (op) {
             case 'convertType': {
@@ -21,19 +14,11 @@ function init() {
                     notify('Unexpected src');
                     return false;
                 }
+                if (!ALLOWED_TYPES.includes(type)) {
+                    notify('Invalid type');
+                    return false;
+                }
                 convertImageAsType(src, filename, type);
-                break;
-            }
-            case 'download': {
-                if (!src || !src.startsWith('data:')) {
-                    notify('Unexpected src');
-                    return false;
-                }
-                if (!workAsContent) {
-                    notify('Cannot download on offscreen');
-                    return false;
-                }
-                download(src, filename);
                 break;
             }
             default: {
@@ -41,37 +26,14 @@ function init() {
                 return false;
             }
         }
-    };
-
-    // work as offscreen
-    chrome.runtime.onMessage.addListener(handleMessages);
-
-    // work as content script for old chrome (v108-)
-    chrome.runtime.onConnect.addListener(port => {
-        if (port.name == 'convertType') {
-            workAsContent = true;
-            contentPort = port;
-            port.onMessage.addListener(handleMessages);
-        }
     });
 }
 
 function notify(message) {
-    if (workAsContent) {
-        alert(message);
-        return;
-    }
     chrome.runtime.sendMessage({ op: 'notify', target: 'background', message });
 }
 
 function download(url, filename) {
-    if (workAsContent) {
-        let a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        a.click();
-        return;
-    }
     chrome.runtime.sendMessage({ op: 'download', target: 'background', url, filename });
 }
 

@@ -29,6 +29,18 @@
   "errorOnLoading": {
     "message": "An error occurred while loading the image"
   },
+  "permissionTitle": {
+    "message": "Permission Required"
+  },
+  "permissionExplanation": {
+    "message": "This extension needs permission to access images on websites so it can save them in your chosen format."
+  },
+  "permissionGrant": {
+    "message": "Grant Permission"
+  },
+  "permissionDenied": {
+    "message": "Permission denied. You can grant it later from the extension's context menu."
+  },
   "optDownloadInstantly": {
     "message": "Download images without confirmation dialog"
   },

@@ -1,29 +1,27 @@
 import { getPrefs } from '../shared/prefs.js';
 
+const ALLOWED_TYPES = ['jpg', 'png', 'webp', 'gif'];
 
 let messages;
 
-// some old chrome doesn't support chrome.i18n.getMessage in service worker.
-if (!chrome.i18n?.getMessage) {
-    if (!chrome.i18n) {
-        chrome.i18n = {};
-    }
-    chrome.i18n.getMessage = (key, args) => {
-        if (key == 'View_on_github') return 'View on github';
-        if (key == 'Save_as' && args?.[0]) return 'Save as ' + args[0];
-        return key;
-    };
-}
-
 function openOptionsPage() {
     chrome.runtime.openOptionsPage();
+}
+
+async function ensureHostPermission(srcUrl) {
+    if (srcUrl.startsWith('data:') || srcUrl.startsWith('blob:')) return true;
+    const granted = await chrome.permissions.contains({ origins: ['<all_urls>'] });
+    if (granted) return true;
+    await chrome.tabs.create({
+        url: chrome.runtime.getURL('src/permissions/permissions.html')
+    });
+    return false;
 }
 
 async function download(url, filename) {
     notify({ srcUrl: url });
     const prefs = await getPrefs();
 
-    // user's dialog preference
     const showSaveDialog = !prefs.downloadInstantly;
 
     chrome.downloads.download(
@@ -40,29 +38,23 @@ async function download(url, filename) {
     );
 }
 
-async function fetchAsDataURL(src, callback) {
-    if (src.startsWith('data:')) {
-        callback(null, src);
-        return;
-    }
-    fetch(src)
-        .then(res => res.blob())
-        .then(blob => {
-            if (!blob.size) throw 'Fetch failed of 0 size';
-            let reader = new FileReader();
-            reader.onload = async function (evt) {
-                callback(null, evt.target.result);
-            };
-            reader.readAsDataURL(blob);
-        })
-        .catch(error => callback(error.message || error));
+async function fetchAsDataURL(src) {
+    if (src.startsWith('data:')) return src;
+    const res = await fetch(src);
+    const blob = await res.blob();
+    if (!blob.size) throw new Error('Fetch failed: 0 size');
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error('FileReader failed'));
+        reader.readAsDataURL(blob);
+    });
 }
 
 async function getSuggestedFilename(src, type) {
     const prefs = await getPrefs();
     let prefix = prefs.defaultFilename ? prefs.defaultFilename.trim() + "_" : "";
 
-    // special for chrome web store apps
     if (src.match(/googleusercontent\.com\/[0-9a-zA-Z]{30,}/)) {
         return prefix + 'screenshot.' + type;
     }
@@ -71,7 +63,11 @@ async function getSuggestedFilename(src, type) {
     }
 
     let filename = src.replace(/[?#].*/, '').replace(/.*[\/]/, '').replace(/\+/g, ' ');
-    filename = decodeURIComponent(filename);
+    try {
+        filename = decodeURIComponent(filename);
+    } catch (e) {
+        // Keep raw filename if percent-encoding is malformed
+    }
 
     filename = filename.replace(/[\x00-\x7f]+/g, function (s) {
         return s.replace(/[^\w\-\.\,@ ]+/g, '');
@@ -126,7 +122,6 @@ async function hasOffscreenDocument(path) {
     return false;
 }
 
-
 async function buildContextMenu() {
     await chrome.contextMenus.removeAll();
     const prefs = await getPrefs();
@@ -150,8 +145,15 @@ async function buildContextMenu() {
     });
 }
 
-// Rebuild context menu when extension installs OR when settings change
-chrome.runtime.onInstalled.addListener(buildContextMenu);
+// Rebuild context menu when extension installs/updates OR when settings change
+chrome.runtime.onInstalled.addListener(async (details) => {
+    await buildContextMenu();
+    if (details.reason === 'install') {
+        chrome.tabs.create({
+            url: chrome.runtime.getURL('src/permissions/permissions.html')
+        });
+    }
+});
 chrome.storage.onChanged.addListener(buildContextMenu);
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -177,46 +179,27 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     let { menuItemId, mediaType, srcUrl } = info;
-    let connectTab = () => {
-        return chrome.tabs.connect(tab.id, { name: 'convertType', frameId: info.frameId });
-    };
 
     if (menuItemId.startsWith('save_as_')) {
         if (mediaType == 'image' && srcUrl) {
             let type = menuItemId.replace('save_as_', '');
 
+            if (!ALLOWED_TYPES.includes(type)) return;
+
             let filename = await getSuggestedFilename(srcUrl, type);
 
             loadMessages();
-            let noChange = srcUrl.startsWith('data:image/' + (type == 'jpg' ? 'jpeg' : type) + ';');
-            if (!chrome.offscreen) {
-                let frameIds = info.frameId ? [] : void 0;
-                await chrome.scripting.executeScript({
-                    target: { tabId: tab.id, frameIds },
-                    files: ["src/offscreen/offscreen.js"],
-                });
-            }
-            fetchAsDataURL(srcUrl, async function (error, dataurl) {
-                if (error) {
-                    notify({ error, srcUrl });
-                    return;
-                }
+
+            const permitted = await ensureHostPermission(srcUrl);
+            if (!permitted) return;
+
+            try {
+                const dataurl = await fetchAsDataURL(srcUrl);
 
                 let fetchedMime = dataurl.substring(dataurl.indexOf(':') + 1, dataurl.indexOf(';'));
                 let targetMime = 'image/' + (type === 'jpg' ? 'jpeg' : type);
 
-                if (noChange || fetchedMime === targetMime) {
-                    download(dataurl, filename);
-                    return;
-                }
-
-                if (!chrome.offscreen) {
-                    let port = connectTab();
-                    await port.postMessage({ op: noChange ? 'download' : 'convertType', target: 'content', src: dataurl, type, filename });
-                    return;
-                }
-
-                if (noChange) {
+                if (fetchedMime === targetMime) {
                     download(dataurl, filename);
                     return;
                 }
@@ -230,7 +213,9 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
                     });
                 }
                 await chrome.runtime.sendMessage({ op: 'convertType', target: 'offscreen', src: dataurl, type, filename });
-            });
+            } catch (error) {
+                notify({ error: error.message || String(error), srcUrl });
+            }
             return;
         } else {
             notify(chrome.i18n.getMessage("errorIsNotImage"));

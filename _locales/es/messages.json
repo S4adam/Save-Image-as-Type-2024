@@ -29,6 +29,18 @@
   "errorOnLoading": {
     "message": "Se produjo un error al cargar la imagen"
   },
+  "permissionTitle": {
+    "message": "Permiso requerido"
+  },
+  "permissionExplanation": {
+    "message": "Esta extensión necesita permiso para acceder a las imágenes en los sitios web para poder guardarlas en el formato elegido."
+  },
+  "permissionGrant": {
+    "message": "Conceder permiso"
+  },
+  "permissionDenied": {
+    "message": "Permiso denegado. Puedes concederlo más tarde desde el menú contextual de la extensión."
+  },
   "optDownloadInstantly": {
     "message": "Descargar imágenes sin cuadro de diálogo de confirmación"
   },

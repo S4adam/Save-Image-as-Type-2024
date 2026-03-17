@@ -29,6 +29,18 @@
   "errorOnLoading": {
     "message": "Une erreur s'est produite lors du chargement de l'image"
   },
+  "permissionTitle": {
+    "message": "Autorisation requise"
+  },
+  "permissionExplanation": {
+    "message": "Cette extension a besoin de l'autorisation d'accéder aux images des sites web pour les enregistrer dans le format choisi."
+  },
+  "permissionGrant": {
+    "message": "Accorder l'autorisation"
+  },
+  "permissionDenied": {
+    "message": "Autorisation refusée. Vous pouvez l'accorder plus tard depuis le menu contextuel de l'extension."
+  },
   "optDownloadInstantly": {
     "message": "Télécharger les images sans boîte de dialogue de confirmation"
   },

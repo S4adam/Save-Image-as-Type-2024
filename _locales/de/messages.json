@@ -29,6 +29,18 @@
   "errorOnLoading": {
     "message": "Beim Laden des Bildes ist ein Fehler aufgetreten"
   },
+  "permissionTitle": {
+    "message": "Berechtigung erforderlich"
+  },
+  "permissionExplanation": {
+    "message": "Diese Erweiterung benötigt die Berechtigung, auf Bilder auf Websites zuzugreifen, um sie im gewählten Format zu speichern."
+  },
+  "permissionGrant": {
+    "message": "Berechtigung erteilen"
+  },
+  "permissionDenied": {
+    "message": "Berechtigung verweigert. Sie können sie später über das Kontextmenü der Erweiterung erteilen."
+  },
   "optDownloadInstantly": {
     "message": "Bilder ohne Bestätigungsdialog herunterladen"
   },

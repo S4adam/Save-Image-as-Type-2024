@@ -15,14 +15,12 @@
   },
   "options_page": "src/options/options.html",
   "default_locale": "en",
-  "minimum_chrome_version": "88.0.0.0",
+  "minimum_chrome_version": "109.0.0.0",
   "permissions": [
     "downloads",
     "contextMenus",
     "offscreen",
-    "activeTab",
-    "scripting",
     "storage"
   ],
-  "host_permissions": ["<all_urls>"]
+  "optional_host_permissions": ["<all_urls>"]
 }
