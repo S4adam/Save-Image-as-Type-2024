@@ -2,27 +2,27 @@
   "manifest_version": 3,
   "name": "__MSG_extName__",
   "short_name": "__MSG_extShortName__",
-  "version": "2.0.1",
+  "version": "2.1.0",
   "description": "__MSG_extDescription__",
   "icons": {
     "128": "assets/icons/icon-128.png",
-    "16": "assets/icons/icon-16.png",
-    "48": "assets/icons/icon-48.png"
+    "48": "assets/icons/icon-48.png",
+    "32": "assets/icons/icon-32.png",
+    "16": "assets/icons/icon-16.png"
   },
   "background": {
     "service_worker": "src/background/background.js",
     "type": "module"
   },
-  "options_page": "src/options/options.html",
+  "options_ui": {
+    "page": "src/options/options.html",
+    "open_in_tab": true
+  },
+  "action": {
+    "default_popup": "src/options/options.html"
+  },
   "default_locale": "en",
-  "minimum_chrome_version": "88.0.0.0",
-  "permissions": [
-    "downloads",
-    "contextMenus",
-    "offscreen",
-    "activeTab",
-    "scripting",
-    "storage"
-  ],
+  "minimum_chrome_version": "109.0.0.0",
+  "permissions": ["downloads", "contextMenus", "offscreen", "storage"],
   "host_permissions": ["<all_urls>"]
 }

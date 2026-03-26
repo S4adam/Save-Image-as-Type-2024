@@ -1,15 +1,20 @@
 {
   "extName": {
-    "message": "Save image as Type v2"
+    "message": "Save image as Type v2",
+    "description": "Full name of the extension, shown in the Chrome Web Store and extension management page."
   },
   "extShortName": {
-    "message": "SaveImageAs"
+    "message": "SaveImageAs",
+    "description": "Short name of the extension (max 12 characters), used where space is limited."
   },
   "extDescription": {
-    "message": "Save image as PNG/JPG/WebP/GIF via context menu"
+    "message": "Save images in your preferred format via the context menu.",
+    "description": "One-line description of the extension shown in the Chrome Web Store."
   },
-  "Save_as": {
+
+  "saveAs": {
     "message": "Save as $FORMAT$",
+    "description": "Context menu item label. $FORMAT$ is replaced with the target format name, e.g. 'Save as PNG'.",
     "placeholders": {
       "format": {
         "content": "$1",
@@ -17,40 +22,145 @@
       }
     }
   },
-  "Open_options": {
-    "message": "Options"
+  "openOpt": {
+    "message": "Options",
+    "description": "Context menu item that opens the extension options page. Also used as the options page heading."
   },
+
   "errorIsNotImage": {
-    "message": "It's not an image"
+    "message": "It's not an image",
+    "description": "Error shown when the user right-clicks something that is not an image."
   },
   "errorOnSaving": {
-    "message": "An error occurred while saving the image"
+    "message": "An error occurred while saving the image",
+    "description": "Error shown when chrome.downloads.download fails to start the download."
   },
-  "errorOnLoading": {
-    "message": "An error occurred while loading the image"
+  "errorNoFormats": {
+    "message": "Please select at least one format.",
+    "description": "Validation error shown on the options page when the user tries to save with no image formats selected."
   },
-  "optDownloadInstantly": {
-    "message": "Download images without confirmation dialog"
+
+  "optIntroTitle": {
+    "message": "About the Fork",
+    "description": "Heading text in the introduction section of the options page."
+  },
+  "optIntroDesc": {
+    "message": "The original extension (with over 1 million downloads!) was recently removed from the Web Store due to spyware. This fork is built from a clean, original Save Image as Type base, with no 'shady' stuff. It also adds support for GIF, along with the options page! No data is collected & all processing is done locally in your browser, and the source code is available on the GitHub (link at the bottom).",
+    "description": "Paragraph text in the introduction section of the options page."
+    },
+
+  "optResetDefaults": {
+    "message": "Reset to defaults",
+    "description": "Label for the button that resets all options to their default values without saving."
   },
   "optContextMenuLabels": {
-    "message": "Context menu labels to show:"
+    "message": "Context menu file formats",
+    "description": "Section heading for the grid of image format checkboxes (JPG, PNG, WebP, GIF, BMP)."
   },
-  "optDefaultFilename": {
-    "message": "Default filename:"
+  "optBehaviour": {
+    "message": "Behaviour",
+    "description": "Section heading for behaviour-related toggles on the options page."
   },
-  "optSave": {
-    "message": "Save"
+
+  "optDownloadInstantly": {
+    "message": "Download images without confirmation dialog",
+    "description": "Toggle title and aria-label for the switch that skips the native Save As dialog."
   },
-  "optSavedSuccess": {
-    "message": "Options saved."
+  "optDownloadInstantlyDesc": {
+    "message": "Download images immediately without a save dialog.",
+    "description": "Short description beneath the 'Download instantly' toggle explaining what it does."
   },
-  "optViewGithub": {
-    "message": "View this fork on GitHub"
-  },
+
   "optEnableMaxLength": {
-    "message": "Limit filename length"
+    "message": "Limit filename length",
+    "description": "Toggle title and aria-label for the switch that enables filename truncation."
+  },
+  "optEnableMaxLengthDesc": {
+    "message": "Truncate filenames to a maximum number of characters.",
+    "description": "Short description beneath the 'Limit filename length' toggle explaining what it does."
   },
   "optMaxLengthValue": {
-    "message": "Max length:"
+    "message": "Max length:",
+    "description": "Label shown beside the filename max-length slider. Followed by the current numeric value."
+  },
+
+  "optMaxAnimationSize": {
+    "message": "Max GIF conversion size",
+    "description": "Toggle title for the animated-image memory limit setting."
+  },
+  "optMaxAnimationSizeDesc": {
+    "message": "Upper limit for animated image conversion memory.",
+    "description": "Short description beneath the 'Max GIF conversion size' toggle."
+  },
+  "optMaxAnimationSizeValue": {
+    "message": "Max size (MB):",
+    "description": "Label shown beside the GIF conversion size slider. Followed by the current numeric value."
+  },
+  "optTooltipHelpAnimation": {
+    "message": "GIF conversion may fail for large images or long animations. Set a max size limit to prevent browser crashes.",
+    "description": "aria-label for the '?' help icon next to the Max GIF conversion size setting."
+  },
+  "optTooltipAnimationText": {
+    "message": "Converting animations (like WebP to GIF) uses a lot of memory. This limit prevents large files from freezing your browser. If a GIF fails to save, try raising this limit.",
+    "description": "Body text of the tooltip bubble shown when hovering the '?' icon next to Max GIF conversion size."
+  },
+
+  "optNaming": {
+    "message": "File naming",
+    "description": "Section heading for filename-related settings on the options page."
+  },
+  "optFilenamePrefix": {
+    "message": "Filename prefix",
+    "description": "Label for the text input where the user enters a prefix to prepend to saved filenames."
+  },
+  "optFilenamePrefixTooltip": {
+    "message": "Prepended to every saved filename.",
+    "description": "Opening sentence of the tooltip bubble shown next to the Filename prefix field."
+  },
+  "optFilenamePrefixExample": {
+    "message": "e.g. \"photo\" → photo_image.jpg",
+    "description": "Example line inside the filename prefix tooltip showing how the prefix is applied."
+  },
+  "optFilenamePrefixHint": {
+    "message": "Result: <prefix>_<original-filename>.ext",
+    "description": "Hint shown beneath the filename prefix input. Angle-bracket tokens are visual placeholders, not runtime substitutions."
+  },
+  "optFilenamePrefixPlaceholder": {
+    "message": "e.g. photo",
+    "description": "Placeholder text shown inside the filename prefix input when it is empty."
+  },
+
+  "optSubfolder": {
+    "message": "Download sub-folder",
+    "description": "Label for the sub-folder input in the File Naming section of the options page."
+  },
+  "optSubfolderTooltip": {
+    "message": "Save into a sub-folder within your browser's Downloads folder.",
+    "description": "Opening sentence of the tooltip bubble shown next to the sub-folder input."
+  },
+  "optSubfolderExample": {
+    "message": "e.g. \"my-photos/2024\" → Downloads/my-photos/2024/image.jpg",
+    "description": "Example line inside the sub-folder tooltip showing how the path is resolved."
+  },
+  "optSubfolderPlaceholder": {
+    "message": "e.g. my-photos/2024",
+    "description": "Placeholder text shown inside the sub-folder input when it is empty."
+  },
+  "optSubfolderTooltipHelp": {
+    "message": "Help for Download sub-folder setting",
+    "description": "aria-label for the '?' icon next to the sub-folder field."
+  },
+
+  "optSave": {
+    "message": "Save",
+    "description": "Label for the Save button in the options page footer."
+  },
+  "optSavedSuccess": {
+    "message": "Options saved.",
+    "description": "Transient success message shown in the footer status area after settings are saved."
+  },
+  "optViewGithub": {
+    "message": "View this fork on GitHub",
+    "description": "Link text in the options page footer that opens the extension's GitHub repository."
   }
 }

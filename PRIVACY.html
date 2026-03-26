@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Privacy Policy - Save Image as Type v2</title>
+    <style>
+      body {
+        font-family:
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          Roboto,
+          sans-serif;
+        line-height: 1.6;
+        color: #333;
+        background-color: #fdfdfd;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 40px 20px;
+      }
+      h1,
+      h2 {
+        color: #111;
+      }
+      h1 {
+        border-bottom: 3px solid #7aad3a;
+        padding-bottom: 10px;
+        margin-bottom: 30px;
+      }
+      h2 {
+        margin-top: 32px;
+        margin-bottom: 12px;
+        font-size: 1.3rem;
+      }
+      p,
+      li {
+        font-size: 1rem;
+        margin-bottom: 12px;
+      }
+      ul {
+        padding-left: 20px;
+        margin-bottom: 20px;
+      }
+      li {
+        margin-bottom: 8px;
+      }
+      a {
+        color: #7aad3a;
+        text-decoration: none;
+        font-weight: 500;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+      .last-updated {
+        margin-top: 50px;
+        font-size: 0.9rem;
+        font-style: italic;
+        color: #666;
+        border-top: 1px solid #ddd;
+        padding-top: 20px;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        body {
+          background-color: #141414;
+          color: #f0ede8;
+        }
+        h1,
+        h2 {
+          color: #ffffff;
+        }
+        h1 {
+          border-bottom-color: #b5f069;
+        }
+        a {
+          color: #b5f069;
+        }
+        .last-updated {
+          color: #95918b;
+          border-top-color: #333;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Privacy Policy for Save Image as Type v2</h1>
+
+    <h2>Overview</h2>
+    <p>
+      "Save Image as Type v2" is a Chrome extension that allows users to convert
+      and download images from web pages in various formats (PNG, JPG, WEBP,
+      GIF, BMP). Your privacy is important. This policy explains what data the
+      extension accesses and how it is handled.
+    </p>
+
+    <h2>Data Collection</h2>
+    <p>
+      This extension does not collect, store, transmit, or share personal data.
+      The extension does not use analytics, tracking, cookies, or remote
+      third-party services. There are no user accounts, no sign-ins, and no
+      external servers involved. Everything runs locally on your machine.
+    </p>
+
+    <h2>What the Extension Accesses</h2>
+    <p>
+      The extension accesses the following data to perform its core
+      functionality:
+    </p>
+    <ul>
+      <li>
+        <strong>Images on the current web page:</strong> To decode, convert, and
+        download them when requested via the context menu.
+      </li>
+      <li>
+        <strong>Image URLs:</strong> To fetch image data for format conversion.
+        URLs are processed locally and are never transmitted outside your
+        browser.
+      </li>
+    </ul>
+
+    <h2>Permissions Used</h2>
+    <ul>
+      <li>
+        Host permissions (<code>&lt;all_urls&gt;</code>): Required to bypass
+        strict CORS restrictions. This allows the extension to read pixel data
+        from images hosted on cross-origin servers.
+      </li>
+      <li>
+        <code>contextMenus</code>: To add the format options to your right-click
+        menu.
+      </li>
+      <li>
+        <code>downloads</code>: To save converted images to your device and
+        route them to your preferred sub-folders.
+      </li>
+      <li>
+        <code>storage</code>: To save your preferences configured on the Options
+        page.
+      </li>
+      <li>
+        <code>offscreen</code>: To process memory-intensive tasks (like
+        converting animated WebP/APNG files into GIFs) in the background without
+        freezing your active tab.
+      </li>
+    </ul>
+
+    <h2>How Data is Processed</h2>
+    <p>
+      All image processing (format conversion, animated frame extraction, GIF
+      encoding) <strong>happens within your browser</strong> using native APIs
+      and bundled local scripts (like <code>gif.js</code>). No image data or
+      browsing history is ever sent to any external server. Converted files are
+      saved directly to your local system.
+    </p>
+
+    <h2>Data Storage</h2>
+    <p>
+      The extension only uses <code>chrome.storage.local</code> to remember your
+      extension settings (such as file naming rules and toggle states from the
+      Options page). This data never leaves your device.
+    </p>
+
+    <h2>Children's Privacy</h2>
+    <p>
+      This extension does not knowingly collect information from children under
+      13. It does not collect information from anyone.
+    </p>
+
+    <h2>Changes to This Policy</h2>
+    <p>
+      If this privacy policy is updated, the changes will be posted on this page
+      with a revised date below.
+    </p>
+
+    <h2>Contact</h2>
+    <p>
+      If you have questions about this privacy policy, you can open an issue on
+      the GitHub repository:
+      <a
+        href="https://github.com/S4adam/Save-Image-as-Type-2024"
+        target="_blank"
+        rel="noopener noreferrer"
+        >github.com/S4adam/Save-Image-as-Type-2024</a
+      >.
+    </p>
+
+    <div class="last-updated">Last updated: March 26, 2026</div>
+  </body>
+</html>

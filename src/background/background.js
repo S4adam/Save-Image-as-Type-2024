@@ -1,244 +1,453 @@
-import { getPrefs } from '../shared/prefs.js';
+/**
+ * @file background.js
+ * @description Main background Service Worker.
+ * Orchestrates menus, network requests, and offscreen image processing.
+ */
 
+import { getPrefs, SUPPORTED_FORMATS, PATHS, CONSTANTS, sanitizeSubfolder } from '../shared/prefs.js';
+const { NET, UI, FILE } = CONSTANTS;
 
-let messages;
-
-// some old chrome doesn't support chrome.i18n.getMessage in service worker.
-if (!chrome.i18n?.getMessage) {
-    if (!chrome.i18n) {
-        chrome.i18n = {};
-    }
-    chrome.i18n.getMessage = (key, args) => {
-        if (key == 'View_on_github') return 'View on github';
-        if (key == 'Save_as' && args?.[0]) return 'Save as ' + args[0];
-        return key;
-    };
-}
+const STATE = {
+    badgeTimeoutId: null,
+    creatingOffscreen: null,
+    menuBuildPromise: Promise.resolve(),
+};
 
 function openOptionsPage() {
     chrome.runtime.openOptionsPage();
 }
 
-async function download(url, filename) {
-    notify({ srcUrl: url });
-    const prefs = await getPrefs();
-
-    // user's dialog preference
-    const showSaveDialog = !prefs.downloadInstantly;
-
-    chrome.downloads.download(
-        { url, filename: filename, saveAs: showSaveDialog },
-        function (downloadId) {
-            if (!downloadId) {
-                let msg = chrome.i18n.getMessage('errorOnSaving');
-                if (chrome.runtime.lastError) {
-                    msg += ': \n' + chrome.runtime.lastError.message;
-                }
-                notify(msg);
-            }
+/**
+ * Triggers a native download for direct (no-conversion) paths only.
+ *
+ * @param {string}  url      - Data URL of the payload.
+ * @param {string}  filename - Target filename (may include a relative sub-path).
+ * @param {boolean} saveAs   - Whether to show the native Save As dialog.
+ */
+function download(url, filename, saveAs) {
+    chrome.downloads.download({ url, filename, saveAs }, (id) => {
+        if (!id) {
+            let msg = chrome.i18n.getMessage('errorOnSaving') || 'Download failed';
+            if (chrome.runtime.lastError) msg += `:\n${chrome.runtime.lastError.message}`;
+            notify(msg);
         }
-    );
-}
-
-async function fetchAsDataURL(src, callback) {
-    if (src.startsWith('data:')) {
-        callback(null, src);
-        return;
-    }
-    fetch(src)
-        .then(res => res.blob())
-        .then(blob => {
-            if (!blob.size) throw 'Fetch failed of 0 size';
-            let reader = new FileReader();
-            reader.onload = async function (evt) {
-                callback(null, evt.target.result);
-            };
-            reader.readAsDataURL(blob);
-        })
-        .catch(error => callback(error.message || error));
-}
-
-async function getSuggestedFilename(src, type) {
-    const prefs = await getPrefs();
-    let prefix = prefs.defaultFilename ? prefs.defaultFilename.trim() + "_" : "";
-
-    // special for chrome web store apps
-    if (src.match(/googleusercontent\.com\/[0-9a-zA-Z]{30,}/)) {
-        return prefix + 'screenshot.' + type;
-    }
-    if (src.startsWith('blob:') || src.startsWith('data:')) {
-        return prefix + 'Untitled.' + type;
-    }
-
-    let filename = src.replace(/[?#].*/, '').replace(/.*[\/]/, '').replace(/\+/g, ' ');
-    filename = decodeURIComponent(filename);
-
-    filename = filename.replace(/[\x00-\x7f]+/g, function (s) {
-        return s.replace(/[^\w\-\.\,@ ]+/g, '');
     });
-    while (filename.match(/\.[^0-9a-z]*\./)) {
-        filename = filename.replace(/\.[^0-9a-z]*\./g, '.');
+}
+
+/**
+ * Fetches an image from a URL and returns it as a base64 Data URL.
+ * @param {string} src
+ * @returns {Promise<string>}
+ */
+async function fetchAsDataURL(src) {
+    if (src.startsWith('data:')) return src;
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), NET.FETCH_TIMEOUT_MS);
+
+    try {
+        const res = await fetch(src, {
+            headers: { Accept: 'image/jpeg, image/png, image/gif, image/*;q=0.8' },
+            signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+
+        const blob = await res.blob();
+        if (!blob.size) throw new Error('Fetch failed: empty response');
+
+        const buffer = await blob.arrayBuffer();
+        const bytes = new Uint8Array(buffer);
+        let binary = '';
+        const chunk = NET.CHUNK_SIZE;
+
+        for (let i = 0; i < bytes.length; i += chunk) {
+            binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+        }
+
+        return `data:${blob.type || 'image/jpeg'};base64,${btoa(binary)}`;
+    } catch (err) {
+        clearTimeout(timeoutId);
+        if (err.name === 'AbortError') throw new Error(`Fetch timed out after ${NET.FETCH_TIMEOUT_MS / 1000} seconds`);
+        throw err;
     }
-    filename = filename.replace(/\s\s+/g, ' ').trim();
-    filename = filename.replace(/\.(jpe?g|png|gif|webp|svg)$/gi, '').trim();
+}
+
+// ─── Filename ─────────────────────────────────────────────────────────────────
+
+/**
+ * Constructs a filesystem-compliant download path from the source URL.
+ *
+ * @param {string}            src   - Original image URL.
+ * @param {string}            type  - Target file extension.
+ * @param {typeof DEFAULT_PREFS} prefs - Already-fetched prefs.
+ * @returns {string}
+ */
+function buildFilename(src, type, prefs) {
+    const rawPrefix = (prefs.defaultFilename ?? '')
+        .replace(/[/\\]/g, '')
+        .replace(/\.\./g, '')
+        .trim();
+    const prefix = rawPrefix ? rawPrefix + '_' : '';
+
+    let base = FILE.DEFAULT_NAME;
+
+    if (/googleusercontent\.com\/[0-9a-zA-Z]{30,}/.test(src)) {
+        base = FILE.SCREENSHOT_NAME;
+    } else if (src.startsWith('blob:') || src.startsWith('data:')) {
+        base = FILE.UNTITLED_NAME;
+    } else {
+        let parsed = src
+            .replace(/[?#].*/, '')
+            .replace(/.*\//, '')
+            .replace(/\+/g, ' ');
+
+        try { parsed = decodeURIComponent(parsed); } catch (_) { /* keep raw */ }
+
+        parsed = parsed.replace(/[\x00-\x7f]+/g, s => s.replace(/[^\w\-.,@ ]+/g, ''));
+
+        while (/\.[^0-9a-z]*\./.test(parsed)) {
+            parsed = parsed.replace(/\.[^0-9a-z]*\./g, '.');
+        }
+
+        parsed = parsed
+            .replace(/\s{2,}/g, ' ')
+            .trim()
+            .replace(/\.(jpe?g|png|gif|webp|svg)$/gi, '')
+            .replace(/[^0-9a-z]+$/i, '')
+            .trim();
+
+        if (parsed) base = parsed;
+    }
+
+    let name = prefix + base;
+    const ext = '.' + type;
 
     if (prefs.enableMaxLength) {
         let maxLen = parseInt(prefs.maxLength, 10);
+        if (isNaN(maxLen) || maxLen < 1) maxLen = FILE.MAX_LEN_FALLBACK;
 
-        if (isNaN(maxLen) || maxLen < 1) maxLen = 255;
-
-        if (filename.length > maxLen) {
-            filename = filename.substr(0, maxLen);
+        if (name.length + ext.length > maxLen) {
+            const available = maxLen - ext.length;
+            name = available > 0 ? name.substring(0, available).trim() : 'img';
         }
     }
-    
-    filename = filename.replace(/[^0-9a-z]+$/i, '').trim();
-    if (!filename) {
-        filename = 'image';
-    }
 
-    return prefix + filename + '.' + type;
+    name = name.replace(/[^0-9a-zA-Z]+$/i, '').trim() || 'image';
+
+    const filename = name + ext;
+    const subfolder = sanitizeSubfolder(prefs.subfolder ?? '');
+
+    return subfolder ? `${subfolder}/${filename}` : filename;
 }
 
+// ─── Notification / Badge ─────────────────────────────────────────────────────
+
+/**
+ * Flashes an error badge and logs to the console.
+ * @param {string|{error:string, srcUrl?:string}} msg
+ */
 function notify(msg) {
-    if (msg.error) {
-        msg = (chrome.i18n.getMessage(msg.error) || msg.error) + '\n' + (msg.srcUrl || msg.src);
-        console.error(msg);
+    if (msg !== null && typeof msg === 'object') {
+        const errorText = msg.error
+            ? (chrome.i18n.getMessage(msg.error) || msg.error)
+            : 'Unknown error';
+        console.error('[Save Image Extension]', errorText, msg.srcUrl ?? '');
+    } else {
+        console.error('[Save Image Extension]', msg);
     }
+
+    chrome.action.setBadgeBackgroundColor({ color: UI.COLOR_ERROR }).catch(() => { });
+    chrome.action.setBadgeText({ text: '!' }).catch(() => { });
+
+    if (STATE.badgeTimeoutId) clearTimeout(STATE.badgeTimeoutId);
+    STATE.badgeTimeoutId = setTimeout(() => {
+        chrome.action.setBadgeText({ text: '' }).catch(() => { });
+    }, UI.BADGE_DURATION_MS);
 }
 
-function loadMessages() {
-    if (!messages) {
-        messages = {};
-        ['errorOnSaving', 'errorOnLoading'].forEach(key => {
-            messages[key] = chrome.i18n.getMessage(key);
-        });
+/**
+ * Updates the action badge to show GIF encoding progress.
+ * @param {number} percent - 0–100
+ */
+function setProgressBadge(percent) {
+    if (percent >= 100) {
+        chrome.action.setBadgeText({ text: '' }).catch(() => { });
+        return;
     }
-    return messages;
+    chrome.action.setBadgeBackgroundColor({ color: UI.COLOR_SUCCESS }).catch(() => { });
+    chrome.action.setBadgeText({ text: `${percent}%` }).catch(() => { });
 }
 
-async function hasOffscreenDocument(path) {
+// ─── Offscreen Document ───────────────────────────────────────────────────────
+
+/**
+ * Ensures the offscreen document exists and prevents multiple concurrent creation attempts.
+ * @param {string} path - Extension-relative path to the offscreen HTML.
+ */
+async function setupOffscreenDocument(path) {
     const offscreenUrl = chrome.runtime.getURL(path);
-    const matchedClients = await clients.matchAll();
-    for (const client of matchedClients) {
-        if (client.url === offscreenUrl) return true;
-    }
-    return false;
-}
 
-
-async function buildContextMenu() {
-    await chrome.contextMenus.removeAll();
-    const prefs = await getPrefs();
-    loadMessages();
-
-    prefs.contextMenuLabels.forEach(function (type) {
-        chrome.contextMenus.create({
-            "id": "save_as_" + type.toLowerCase(),
-            "title": chrome.i18n.getMessage("Save_as", [type]),
-            "type": "normal",
-            "contexts": ["image"],
+    if (chrome.runtime.getContexts) {
+        const contexts = await chrome.runtime.getContexts({
+            contextTypes: ['OFFSCREEN_DOCUMENT'],
+            documentUrls: [offscreenUrl],
         });
-    });
+        if (contexts.length > 0) return;
+    } else {
+        const matched = await clients.matchAll({ includeUncontrolled: true });
+        if (matched.some(c => c.url === offscreenUrl)) return;
+    }
 
-    chrome.contextMenus.create({ "id": "sep_1", "type": "separator", "contexts": ["image"] });
-    chrome.contextMenus.create({
-        "id": "options",
-        "title": chrome.i18n.getMessage("Open_options"),
-        "type": "normal",
-        "contexts": ["image"],
-    });
+    if (STATE.creatingOffscreen) {
+        await Promise.race([
+            STATE.creatingOffscreen,
+            new Promise(resolve => setTimeout(resolve, UI.OFFSCREEN_WAIT_MS)),
+        ]);
+        return;
+    }
+
+    try {
+        STATE.creatingOffscreen = chrome.offscreen.createDocument({
+            url: offscreenUrl,
+            reasons: ['BLOBS', 'WORKERS'],
+            justification: 'Encode image to target format using Canvas API and Web Workers',
+        });
+        await STATE.creatingOffscreen;
+    } catch (err) {
+        if (!err.message.includes('Only a single offscreen document may be created')) {
+            throw err;
+        }
+    } finally {
+        STATE.creatingOffscreen = null;
+    }
 }
 
-// Rebuild context menu when extension installs OR when settings change
-chrome.runtime.onInstalled.addListener(buildContextMenu);
-chrome.storage.onChanged.addListener(buildContextMenu);
+// ─── Offscreen Job Queue ──────────────────────────────────────────────────────
 
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    let { target, op } = message || {};
-    if (target == 'background' && op) {
-        if (op == 'download') {
-            let { url, filename } = message;
-            download(url, filename);
-        } else if (op == 'notify') {
-            let msg = message.message;
-            if (msg && msg.error) {
-                let msg2 = chrome.i18n.getMessage(msg.error) || msg.error;
-                if (msg.src) msg2 += '\n' + msg.src;
-                notify(msg2);
-            } else {
-                notify(message);
-            }
-        } else {
-            console.warn('unknown op: ' + op);
+/**
+ * Serial queue for the single offscreen document slot.
+ */
+const OFFSCREEN_QUEUE = {
+    jobs: [],
+    running: false,
+    /**
+     * Resolve / reject callbacks for the job currently in flight.
+     * Null when the queue is idle.
+     * @type {{ resolve: () => void, reject: (err: Error) => void } | null}
+     */
+    current: null,
+};
+
+/**
+ * Adds a job to the queue and starts the drain loop if it is not already running.
+ * @param {object} params - Forwarded verbatim as the body of the `convertType` message.
+ */
+function enqueueOffscreenJob(params) {
+    OFFSCREEN_QUEUE.jobs.push(params);
+    if (!OFFSCREEN_QUEUE.running) _drainOffscreenQueue();
+}
+
+
+const OFFSCREEN_JOB_TIMEOUT_MS = 120_000;
+
+/**
+ * Processes the job queue one entry at a time.
+ *
+ * Re-entry is blocked by `running`; callers may call this freely.
+ * When the queue is empty the offscreen document is closed.
+ */
+async function _drainOffscreenQueue() {
+    if (OFFSCREEN_QUEUE.running) return;
+    OFFSCREEN_QUEUE.running = true;
+
+    while (OFFSCREEN_QUEUE.jobs.length > 0) {
+        const job = OFFSCREEN_QUEUE.jobs.shift();
+        try {
+            await setupOffscreenDocument(PATHS.OFFSCREEN_HTML);
+
+            const jobDone = new Promise((resolve, reject) => {
+                OFFSCREEN_QUEUE.current = { resolve, reject };
+            });
+            const timeoutGuard = new Promise((_, reject) =>
+                setTimeout(
+                    () => reject(new Error('Offscreen conversion timed out')),
+                    OFFSCREEN_JOB_TIMEOUT_MS,
+                )
+            );
+
+            // The offscreen listener returns false (no async response), so
+            // sendMessage always rejects with "port closed" which is expected.
+            chrome.runtime.sendMessage({ op: 'convertType', target: 'offscreen', ...job })
+                .catch(() => { });
+
+            await Promise.race([jobDone, timeoutGuard]);
+
+        } catch (err) {
+            console.error('[background] Offscreen job failed:', err.message);
         }
+
+        OFFSCREEN_QUEUE.current = null;
+    }
+
+    OFFSCREEN_QUEUE.running = false;
+
+    chrome.offscreen.closeDocument().catch(() => { });
+}
+
+// ─── Context Menu ─────────────────────────────────────────────────────────────
+
+/**
+ * Rebuilds the right-click context menu from current preferences.
+ */
+function buildContextMenu() {
+    STATE.menuBuildPromise = STATE.menuBuildPromise
+        .then(async () => {
+            await chrome.contextMenus.removeAll();
+            const prefs = await getPrefs();
+
+            for (const type of prefs.contextMenuLabels) {
+                chrome.contextMenus.create({
+                    id: 'save_as_' + type.toLowerCase(),
+                    title: chrome.i18n.getMessage('saveAs', [type]) || `Save as ${type}`,
+                    type: 'normal',
+                    contexts: ['image'],
+                });
+            }
+
+            if (prefs.contextMenuLabels.length > 0) {
+                chrome.contextMenus.create({
+                    id: 'sep_1',
+                    type: 'separator',
+                    contexts: ['image'],
+                });
+            }
+
+            chrome.contextMenus.create({
+                id: 'options',
+                title: chrome.i18n.getMessage('openOpt') || 'Options',
+                type: 'normal',
+                contexts: ['image'],
+            });
+        })
+        .catch(err => {
+            console.error('[Save Image Extension] Failed to build context menu:', err);
+            STATE.menuBuildPromise = Promise.resolve();
+        });
+}
+
+// ─── Lifecycle ────────────────────────────────────────────────────────────────
+
+chrome.runtime.onInstalled.addListener(buildContextMenu);
+
+chrome.storage.onChanged.addListener((changes) => {
+    if (changes.contextMenuLabels) {
+        buildContextMenu();
     }
 });
 
-chrome.contextMenus.onClicked.addListener(async (info, tab) => {
-    let { menuItemId, mediaType, srcUrl } = info;
-    let connectTab = () => {
-        return chrome.tabs.connect(tab.id, { name: 'convertType', frameId: info.frameId });
-    };
+// ─── Message Broker ───────────────────────────────────────────────────────────
 
-    if (menuItemId.startsWith('save_as_')) {
-        if (mediaType == 'image' && srcUrl) {
-            let type = menuItemId.replace('save_as_', '');
+chrome.runtime.onMessage.addListener((message, _sender, _sendResponse) => {
+    const { target, op } = message ?? {};
+    if (target !== 'background' || !op) return;
 
-            let filename = await getSuggestedFilename(srcUrl, type);
+    switch (op) {
+        case 'download': {
+            const { url, filename, saveAs } = message;
 
-            loadMessages();
-            let noChange = srcUrl.startsWith('data:image/' + (type == 'jpg' ? 'jpeg' : type) + ';');
-            if (!chrome.offscreen) {
-                let frameIds = info.frameId ? [] : void 0;
-                await chrome.scripting.executeScript({
-                    target: { tabId: tab.id, frameIds },
-                    files: ["src/offscreen/offscreen.js"],
-                });
-            }
-            fetchAsDataURL(srcUrl, async function (error, dataurl) {
-                if (error) {
-                    notify({ error, srcUrl });
-                    return;
+            setProgressBadge(100);
+
+            chrome.downloads.download({ url, filename, saveAs }, (id) => {
+                if (url.startsWith('blob:')) {
+                    chrome.runtime.sendMessage({ op: 'revokeBlob', target: 'offscreen', url })
+                        .catch(() => { });
                 }
 
-                let fetchedMime = dataurl.substring(dataurl.indexOf(':') + 1, dataurl.indexOf(';'));
-                let targetMime = 'image/' + (type === 'jpg' ? 'jpeg' : type);
-
-                if (noChange || fetchedMime === targetMime) {
-                    download(dataurl, filename);
-                    return;
+                if (!id) {
+                    let msg = chrome.i18n.getMessage('errorOnSaving') || 'Download failed';
+                    if (chrome.runtime.lastError) msg += `:\n${chrome.runtime.lastError.message}`;
+                    notify(msg);
                 }
 
-                if (!chrome.offscreen) {
-                    let port = connectTab();
-                    await port.postMessage({ op: noChange ? 'download' : 'convertType', target: 'content', src: dataurl, type, filename });
-                    return;
-                }
-
-                if (noChange) {
-                    download(dataurl, filename);
-                    return;
-                }
-
-                const offscreenSrc = 'src/offscreen/offscreen.html';
-                if (!(await hasOffscreenDocument(offscreenSrc))) {
-                    await chrome.offscreen.createDocument({
-                        url: chrome.runtime.getURL(offscreenSrc),
-                        reasons: ['DOM_SCRAPING'],
-                        justification: 'Download a image for user',
-                    });
-                }
-                await chrome.runtime.sendMessage({ op: 'convertType', target: 'offscreen', src: dataurl, type, filename });
+                OFFSCREEN_QUEUE.current?.resolve();
             });
-            return;
-        } else {
-            notify(chrome.i18n.getMessage("errorIsNotImage"));
+            break;
         }
-        return;
+
+        case 'progress': {
+            setProgressBadge(message.percent ?? 0);
+            break;
+        }
+
+        case 'notify': {
+            const msg = message.message;
+            if (msg?.error) {
+                let text = chrome.i18n.getMessage(msg.error) || msg.error;
+                if (msg.src) text += '\n' + msg.src;
+                notify(text);
+            } else {
+                notify(msg);
+            }
+
+            if (OFFSCREEN_QUEUE.current) {
+                OFFSCREEN_QUEUE.current.reject(
+                    new Error(typeof msg === 'string' ? msg : (msg?.error ?? 'Conversion failed'))
+                );
+            } else {
+                chrome.offscreen.closeDocument().catch(() => { });
+            }
+            break;
+        }
+
+        default:
+            console.warn('[Save Image Extension] Unknown op:', op);
     }
-    if (menuItemId == 'options') {
+});
+
+// ─── Menu Click Handler ───────────────────────────────────────────────────────
+
+chrome.contextMenus.onClicked.addListener(async (info) => {
+    const { menuItemId, mediaType, srcUrl } = info;
+
+    if (menuItemId === 'options') {
         openOptionsPage();
         return;
+    }
+    if (!menuItemId.startsWith('save_as_')) return;
+
+    if (mediaType !== 'image' || !srcUrl) {
+        notify(chrome.i18n.getMessage('errorIsNotImage') || 'Selected item is not an image.');
+        return;
+    }
+
+    const type = menuItemId.replace('save_as_', '');
+    const format = SUPPORTED_FORMATS.find(
+        f => f.value.toLowerCase() === type.toLowerCase()
+    );
+    if (!format) return;
+
+    const prefs = await getPrefs();
+    const filename = buildFilename(srcUrl, type, prefs);
+    const saveAs = !prefs.downloadInstantly;
+
+    try {
+        const dataurl = await fetchAsDataURL(srcUrl);
+        const fetchedMime = dataurl.slice(dataurl.indexOf(':') + 1, dataurl.indexOf(';'));
+
+        if (fetchedMime === format.mimeType) {
+            download(dataurl, filename, saveAs);
+            return;
+        }
+
+        enqueueOffscreenJob({
+            src: dataurl,
+            type,
+            filename,
+            saveAs,
+            maxAnimationSizeMb: prefs.maxAnimationSizeMb,
+        });
+
+    } catch (error) {
+        notify({ error: error.message, srcUrl });
     }
 });

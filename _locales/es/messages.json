@@ -1,15 +1,20 @@
 {
   "extName": {
-    "message": "Save image as Type v2"
+    "message": "Guardar imagen como Tipo v2",
+    "description": "Full name of the extension, shown in the Chrome Web Store and extension management page."
   },
   "extShortName": {
-    "message": "SaveImageAs"
+    "message": "GuardarComo",
+    "description": "Short name of the extension (max 12 characters), used where space is limited."
   },
   "extDescription": {
-    "message": "Guarda imágenes como PNG/JPG/WebP/GIF mediante el menú contextual"
+    "message": "Guarda imágenes en el formato que prefieras desde el menú contextual.",
+    "description": "One-line description of the extension shown in the Chrome Web Store."
   },
-  "Save_as": {
+
+  "saveAs": {
     "message": "Guardar como $FORMAT$",
+    "description": "Context menu item label. $FORMAT$ is replaced with the target format name, e.g. 'Save as PNG'.",
     "placeholders": {
       "format": {
         "content": "$1",
@@ -17,40 +22,145 @@
       }
     }
   },
-  "Open_options": {
-    "message": "Opciones"
+  "openOpt": {
+    "message": "Opciones",
+    "description": "Context menu item that opens the extension options page. Also used as the options page heading."
   },
+
   "errorIsNotImage": {
-    "message": "Esto no es una imagen"
+    "message": "No es una imagen",
+    "description": "Error shown when the user right-clicks something that is not an image."
   },
   "errorOnSaving": {
-    "message": "Se produjo un error al guardar la imagen"
+    "message": "Se produjo un error al guardar la imagen",
+    "description": "Error shown when chrome.downloads.download fails to start the download."
   },
-  "errorOnLoading": {
-    "message": "Se produjo un error al cargar la imagen"
+  "errorNoFormats": {
+    "message": "Por favor, selecciona al menos un formato.",
+    "description": "Validation error shown on the options page when the user tries to save with no image formats selected."
   },
-  "optDownloadInstantly": {
-    "message": "Descargar imágenes sin cuadro de diálogo de confirmación"
+
+  "optIntroTitle": {
+    "message": "Acerca de este Fork",
+    "description": "Heading text in the introduction section of the options page."
+  },
+  "optIntroDesc": {
+    "message": "La extensión original (¡con más de 1 millón de descargas!) fue eliminada recientemente de la Web Store debido a spyware. Este fork está construido a partir de una base limpia y original, sin cosas dudosas. ¡También añade soporte para GIF, junto con la página de opciones! No se recopilan datos, todo el procesamiento se realiza localmente en tu navegador y el código fuente está disponible en GitHub (enlace en la parte inferior).",
+    "description": "Paragraph text in the introduction section of the options page."
+  },
+
+  "optResetDefaults": {
+    "message": "Restablecer a predeterminados",
+    "description": "Label for the button that resets all options to their default values without saving."
   },
   "optContextMenuLabels": {
-    "message": "Etiquetas del menú contextual a mostrar:"
+    "message": "Formatos del menú contextual",
+    "description": "Section heading for the grid of image format checkboxes (JPG, PNG, WebP, GIF, BMP)."
   },
-  "optDefaultFilename": {
-    "message": "Nombre de archivo predeterminado:"
+  "optBehaviour": {
+    "message": "Comportamiento",
+    "description": "Section heading for behaviour-related toggles on the options page."
   },
-  "optSave": {
-    "message": "Guardar"
+
+  "optDownloadInstantly": {
+    "message": "Descargar imágenes sin cuadro de confirmación",
+    "description": "Toggle title and aria-label for the switch that skips the native Save As dialog."
   },
-  "optSavedSuccess": {
-    "message": "Opciones guardadas."
+  "optDownloadInstantlyDesc": {
+    "message": "Descarga las imágenes inmediatamente sin un cuadro de diálogo de guardado.",
+    "description": "Short description beneath the 'Download instantly' toggle explaining what it does."
   },
-  "optViewGithub": {
-    "message": "Ver este fork en GitHub"
-  },
+
   "optEnableMaxLength": {
-    "message": "Limitar la longitud del nombre de archivo"
+    "message": "Limitar la longitud del nombre de archivo",
+    "description": "Toggle title and aria-label for the switch that enables filename truncation."
+  },
+  "optEnableMaxLengthDesc": {
+    "message": "Trunca los nombres de archivo a un número máximo de caracteres.",
+    "description": "Short description beneath the 'Limit filename length' toggle explaining what it does."
   },
   "optMaxLengthValue": {
-    "message": "Longitud máxima:"
+    "message": "Longitud máxima:",
+    "description": "Label shown beside the filename max-length slider. Followed by the current numeric value."
+  },
+
+  "optMaxAnimationSize": {
+    "message": "Tamaño máximo de conversión a GIF",
+    "description": "Toggle title for the animated-image memory limit setting."
+  },
+  "optMaxAnimationSizeDesc": {
+    "message": "Límite superior de memoria para convertir imágenes animadas.",
+    "description": "Short description beneath the 'Max GIF conversion size' toggle."
+  },
+  "optMaxAnimationSizeValue": {
+    "message": "Tamaño máx (MB):",
+    "description": "Label shown beside the GIF conversion size slider. Followed by the current numeric value."
+  },
+  "optTooltipHelpAnimation": {
+    "message": "La conversión a GIF puede fallar en imágenes grandes o animaciones largas. Establece un límite de tamaño para evitar que el navegador se congele.",
+    "description": "aria-label for the '?' help icon next to the Max GIF conversion size setting."
+  },
+  "optTooltipAnimationText": {
+    "message": "Convertir animaciones (como WebP a GIF) consume mucha memoria. Este límite evita que los archivos grandes congelen tu navegador. Si no se puede guardar un GIF, intenta aumentar este límite.",
+    "description": "Body text of the tooltip bubble shown when hovering the '?' icon next to Max GIF conversion size."
+  },
+
+  "optNaming": {
+    "message": "Nombres de archivo",
+    "description": "Section heading for filename-related settings on the options page."
+  },
+  "optFilenamePrefix": {
+    "message": "Prefijo del nombre de archivo",
+    "description": "Label for the text input where the user enters a prefix to prepend to saved filenames."
+  },
+  "optFilenamePrefixTooltip": {
+    "message": "Se añade al principio de cada nombre de archivo guardado.",
+    "description": "Opening sentence of the tooltip bubble shown next to the Filename prefix field."
+  },
+  "optFilenamePrefixExample": {
+    "message": "ej. \"foto\" → foto_imagen.jpg",
+    "description": "Example line inside the filename prefix tooltip showing how the prefix is applied."
+  },
+  "optFilenamePrefixHint": {
+    "message": "Resultado: <prefijo>_<nombre-original>.ext",
+    "description": "Hint shown beneath the filename prefix input. Angle-bracket tokens are visual placeholders, not runtime substitutions."
+  },
+  "optFilenamePrefixPlaceholder": {
+    "message": "ej. foto",
+    "description": "Placeholder text shown inside the filename prefix input when it is empty."
+  },
+
+  "optSubfolder": {
+    "message": "Subcarpeta de descarga",
+    "description": "Label for the sub-folder input in the File Naming section of the options page."
+  },
+  "optSubfolderTooltip": {
+    "message": "Guarda en una subcarpeta dentro de la carpeta Descargas de tu navegador.",
+    "description": "Opening sentence of the tooltip bubble shown next to the sub-folder input."
+  },
+  "optSubfolderExample": {
+    "message": "ej. \"mis-fotos/2024\" → Descargas/mis-fotos/2024/imagen.jpg",
+    "description": "Example line inside the sub-folder tooltip showing how the path is resolved."
+  },
+  "optSubfolderPlaceholder": {
+    "message": "ej. mis-fotos/2024",
+    "description": "Placeholder text shown inside the sub-folder input when it is empty."
+  },
+  "optSubfolderTooltipHelp": {
+    "message": "Ayuda para la configuración de la subcarpeta de descarga",
+    "description": "aria-label for the '?' icon next to the sub-folder field."
+  },
+
+  "optSave": {
+    "message": "Guardar",
+    "description": "Label for the Save button in the options page footer."
+  },
+  "optSavedSuccess": {
+    "message": "Opciones guardadas.",
+    "description": "Transient success message shown in the footer status area after settings are saved."
+  },
+  "optViewGithub": {
+    "message": "Ver este fork en GitHub",
+    "description": "Link text in the options page footer that opens the extension's GitHub repository."
   }
 }

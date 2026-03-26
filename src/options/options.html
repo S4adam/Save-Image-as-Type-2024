@@ -5,279 +5,827 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title data-i18n="extName">Options</title>
     <style>
-      @import url("https://fonts.googleapis.com/css2?family=SUSE:wght@400;600&display=swap");
-
+      /* ─── Design Tokens ─────────────────────────────────────────────── */
       :root {
-        --bg-main: #1e1e1e;
-        --bg-panel: #2a2a2a;
-        --text-main: #e0e0e0;
-        --text-muted: #9e9e9e;
-        --accent: #4caf50;
-        --border: #3f3f3f;
+        --bg-root: #141414;
+        --bg-card: #1c1c1c;
+        --bg-input: #111111;
+        --bg-section: #202020;
+        --bg-danger: #3a1e1e;
+        --text-primary: #f0ede8;
+        --text-secondary: #95918b;
+        --text-muted: #868686;
+        --text-muted2: rgb(81, 81, 81);
+        --text-section-label: #bbffff;
+        --accent: #b5f069;
+        --accent-dim: #7aad3a;
+        --accent-glow: rgba(181, 240, 105, 0.12);
+        --danger: #ff5f5f;
+        --border: rgba(255, 255, 255, 0.07);
+        --border-focus: rgba(181, 240, 105, 0.5);
+        --radius-sm: 6px;
+        --radius-md: 10px;
+        --radius-lg: 16px;
+        --transition: 0.2s ease;
+        --font-ui:
+          system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+        --font-mono:
+          ui-monospace, "SFMono-Regular", "SF Mono", Menlo, Monaco, Consolas,
+          "Liberation Mono", "Courier New", monospace;
       }
-
+      /* ─── Reset & Base ──────────────────────────────────────────────── */
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
       body {
-        font-family: "SUSE", system-ui, sans-serif;
-        background-color: var(--bg-main);
-        color: var(--text-main);
+        font-family: var(--font-ui);
+        background-color: var(--bg-root);
+        color: var(--text-primary);
+        min-height: 100vh;
         display: flex;
         justify-content: center;
-        padding: 40px 20px;
-        margin: 0;
+        padding: 20px 12px;
       }
-
-      .container {
-        background-color: var(--bg-panel);
-        width: 100%;
-        max-width: 500px;
-        padding: 30px;
-        border-radius: 12px;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
-      }
-
-      h1 {
-        margin-top: 0;
-        font-size: 1.5rem;
-        border-bottom: 1px solid var(--border);
-        padding-bottom: 15px;
-      }
-
-      .setting-group {
-        margin-bottom: 25px;
-      }
-
-      .setting-group > label.block-label {
-        display: block;
-        margin-bottom: 8px;
-        font-weight: 600;
-        color: var(--text-main);
-      }
-
-      input[type="text"],
-      select {
-        width: 100%;
-        box-sizing: border-box;
-        padding: 10px 12px;
-        background-color: var(--bg-main);
+      /* ─── Card ──────────────────────────────────────────────────────── */
+      .card {
+        background: var(--bg-card);
         border: 1px solid var(--border);
-        border-radius: 6px;
-        color: var(--text-main);
-        font-family: inherit;
+        border-radius: var(--radius-lg);
+        width: 100%;
+        max-width: 480px;
+        padding: 20px;
+        box-shadow: 0 24px 48px rgba(0, 0, 0, 0.5);
       }
-
-      input[type="text"]:focus,
-      select:focus {
-        outline: none;
-        border-color: var(--accent);
+      /* ─── Header ────────────────────────────────────────────────────── */
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 28px;
+        gap: 12px;
       }
-
-      /* Modern Toggle Switch */
-      .toggle-label {
+      .header-title {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+      }
+      .header-title h1 {
+        font-size: 1.25rem;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+        color: var(--text-primary);
+      }
+      .header-subtitle {
+        font-size: 0.72rem;
+        font-family: var(--font-mono);
+        color: var(--text-muted);
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+      }
+      @media (max-width: 400px) {
+        .header {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+        .btn-reset {
+          width: 100%;
+          justify-content: center;
+        }
+      }
+      /* ─── Reset Button ──────────────────────────────────────────────── */
+      .btn-reset {
         display: flex;
         align-items: center;
+        gap: 6px;
+        padding: 7px 12px;
+        background: transparent;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        color: var(--text-secondary);
+        font-family: var(--font-ui);
+        font-size: 0.75rem;
+        font-weight: 600;
         cursor: pointer;
-        margin-bottom: 10px;
+        transition:
+          color var(--transition),
+          border-color var(--transition),
+          background var(--transition);
+        white-space: nowrap;
       }
-
-      .toggle-label input[type="checkbox"] {
+      .btn-reset:hover {
+        color: var(--text-primary);
+        border-color: rgba(255, 255, 255, 0.2);
+        background: var(--bg-danger, transparent);
+      }
+      .btn-reset svg {
+        flex-shrink: 0;
+        transition: transform 0.4s ease-in-out;
+      }
+      .btn-reset:hover svg {
+        transform: rotate(360deg);
+      }
+      /* ─── Intro Box ─────────────────────────────────────────────────── */
+      .intro-box {
+        background: rgba(181, 240, 105, 0.05);
+        border: 1px solid var(--border);
+        border-left: 3px solid var(--accent-dim);
+        border-radius: var(--radius-sm);
+        padding: 14px 16px;
+        margin-bottom: 20px;
+        font-size: 0.8rem;
+        line-height: 1.5;
+        color: var(--text-secondary);
+      }
+      .intro-box strong {
+        color: var(--text-primary);
+        display: block;
+        margin-bottom: 6px;
+        font-size: 0.85rem;
+      }
+      /* ─── Sections ──────────────────────────────────────────────────── */
+      .section {
+        background: var(--bg-section);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        padding: 18px;
+        margin-bottom: 12px;
+      }
+      .section-label {
+        font-size: 0.65rem;
+        font-family: var(--font-mono);
+        font-weight: 500;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--text-section-label);
+        margin-bottom: 14px;
+      }
+      /* ─── Format Chips Grid ─────────────────────────────────────────── */
+      .format-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+        gap: 8px;
+      }
+      .format-chip input[type="checkbox"] {
+        position: absolute;
         opacity: 0;
         width: 0;
         height: 0;
       }
-
-      .slider {
-        position: relative;
-        display: inline-block;
-        width: 40px;
-        height: 20px;
-        background-color: var(--border);
-        border-radius: 20px;
-        margin-right: 12px;
-        transition: 0.3s;
+      .format-chip label {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 12px 8px;
+        background: var(--bg-input);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        transition:
+          border-color var(--transition),
+          background var(--transition),
+          color var(--transition);
+        user-select: none;
       }
-
-      .slider:before {
+      .format-chip label:hover {
+        border-color: rgba(255, 255, 255, 0.15);
+        background: rgba(255, 255, 255, 0.03);
+      }
+      .format-chip input:checked + label {
+        border-color: var(--accent-dim);
+        background: rgba(181, 240, 105, 0.06);
+        color: var(--accent);
+      }
+      .format-chip .chip-icon {
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.6rem;
+        font-family: var(--font-mono);
+        font-weight: 500;
+        letter-spacing: 0.03em;
+        background: rgba(255, 255, 255, 0.06);
+        color: var(--text-secondary);
+        transition:
+          background var(--transition),
+          color var(--transition);
+      }
+      .format-chip input:checked + label .chip-icon {
+        background: rgba(181, 240, 105, 0.15);
+        color: var(--accent);
+      }
+      .format-chip .chip-name {
+        font-size: 0.72rem;
+        font-family: var(--font-mono);
+        font-weight: 500;
+        color: var(--text-secondary);
+        transition: color var(--transition);
+      }
+      .format-chip input:checked + label .chip-name {
+        color: var(--accent);
+      }
+      /* ─── Toggle Row & Group ────────────────────────────────────────── */
+      .toggle-row,
+      .toggle-group {
+        padding: 12px 0;
+        border-bottom: 1px solid var(--border);
+      }
+      .toggle-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .toggle-row:first-child,
+      .toggle-group:first-child {
+        padding-top: 0;
+      }
+      .toggle-row:last-child,
+      .toggle-group:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+      }
+      /* ─── Group Overrides ───────────────────────────────────────────── */
+      .toggle-group .toggle-row {
+        padding: 0;
+        border-bottom: none;
+      }
+      .toggle-row .toggle-text {
+        flex: 1;
+        min-width: 0;
+      }
+      .toggle-row .toggle-title {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        line-height: 1.3;
+      }
+      .toggle-row .toggle-desc {
+        font-size: 0.72rem;
+        color: var(--text-secondary);
+        margin-top: 2px;
+        line-height: 1.4;
+      }
+      /* ─── Toggle Switch ─────────────────────────────────────────────── */
+      .switch {
+        position: relative;
+        flex-shrink: 0;
+        width: 38px;
+        height: 22px;
+      }
+      .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+        position: absolute;
+      }
+      .switch-track {
+        position: absolute;
+        inset: 0;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 22px;
+        cursor: pointer;
+        transition: background var(--transition);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+      .switch-track::after {
         content: "";
         position: absolute;
-        height: 14px;
-        width: 14px;
-        left: 3px;
-        bottom: 3px;
-        background-color: white;
+        width: 16px;
+        height: 16px;
+        left: 2px;
+        top: 2px;
+        background: var(--text-secondary);
         border-radius: 50%;
-        transition: 0.3s;
+        transition:
+          transform var(--transition),
+          background var(--transition);
       }
-
-      input:checked + .slider {
-        background-color: var(--accent);
+      .switch input:checked + .switch-track {
+        background: var(--accent-glow);
+        border-color: var(--accent-dim);
       }
-
-      input:checked + .slider:before {
-        transform: translateX(20px);
+      .switch input:checked + .switch-track::after {
+        transform: translateX(16px);
+        background: var(--accent);
       }
-
-      /* Action Footer */
-      .actions {
+      .switch input:focus-visible + .switch-track {
+        outline: 2px solid var(--border-focus);
+        outline-offset: 2px;
+      }
+      /* ─── Sub-section (slider) ──────────────────────────────────────── */
+      .sub-section {
+        margin-top: 10px;
+        margin-left: 16px;
+        padding: 10px 12px;
+        background: var(--bg-input);
+        border: 1px solid var(--border);
+        border-left: 3px solid var(--accent-dim);
+        border-radius: var(--radius-sm);
         display: flex;
-        justify-content: space-between;
         align-items: center;
-        margin-top: 30px;
+        gap: 10px;
+        width: auto;
+        min-width: 0;
+      }
+      .sub-section.disabled {
+        opacity: 0.35;
+        pointer-events: none;
+      }
+      .sub-section-label {
+        font-size: 0.72rem;
+        font-family: var(--font-mono);
+        color: var(--text-secondary);
+        white-space: nowrap;
+      }
+      input[type="range"] {
+        -webkit-appearance: none;
+        appearance: none;
+        flex: 1;
+        min-width: 50px;
+        height: 4px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+        outline: none;
+      }
+      input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: var(--accent);
+        cursor: pointer;
+        transition: box-shadow var(--transition);
+      }
+      input[type="range"]::-webkit-slider-thumb:hover {
+        box-shadow: 0 0 0 4px rgba(181, 240, 105, 0.2);
+      }
+      .slider-value {
+        font-size: 0.75rem;
+        font-family: var(--font-mono);
+        font-weight: 500;
+        color: var(--accent);
+        min-width: 28px;
+        text-align: right;
+      }
+      /* ─── Text Fields (Prefix & Subfolder) ──────────────────────────── */
+      .field-header {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 8px;
+      }
+      .field-label {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--text-primary);
+      }
+      /* Visual divider between two fields within the same section */
+      .field-separator {
+        border: none;
+        border-top: 1px solid var(--border);
+        margin: 16px 0;
+      }
+      /* ─── Tooltip ───────────────────────────────────────────────────── */
+      .tooltip-wrap {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+      }
+      .tooltip-icon {
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.07);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        color: var(--text-muted);
+        font-size: 0.6rem;
+        font-family: var(--font-mono);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: default;
+        transition:
+          border-color var(--transition),
+          color var(--transition);
+        user-select: none;
+      }
+      .tooltip-icon:hover {
+        border-color: rgba(255, 255, 255, 0.3);
+        color: var(--text-secondary);
+      }
+      .tooltip-bubble {
+        position: absolute;
+        left: 50%;
+        bottom: calc(100% + 8px);
+        transform: translateX(-50%);
+        background: #2e2e2e;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: var(--radius-sm);
+        padding: 8px 10px;
+        width: 220px;
+        font-size: 0.72rem;
+        font-family: var(--font-mono);
+        color: var(--accent);
+        line-height: 1.5;
+        pointer-events: none;
+        opacity: 0;
+        visibility: hidden;
+        transition:
+          opacity var(--transition),
+          visibility var(--transition);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+        z-index: 10;
+      }
+      .tooltip-bubble::after {
+        content: "";
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        border: 5px solid transparent;
+        border-top-color: rgba(255, 255, 255, 0.12);
+      }
+      .tooltip-bubble .tooltip-example {
+        display: block;
+        margin-top: 5px;
+        font-size: 0.68rem;
+      }
+      .tooltip-wrap:hover .tooltip-bubble,
+      .tooltip-wrap:focus-within .tooltip-bubble {
+        opacity: 1;
+        visibility: visible;
+      }
+      .text-input {
+        width: 100%;
+        padding: 9px 12px;
+        background: var(--bg-input);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        color: var(--text-primary);
+        font-family: var(--font-mono);
+        font-size: 0.82rem;
+        transition:
+          border-color var(--transition),
+          box-shadow var(--transition);
+      }
+      .text-input::placeholder {
+        color: var(--text-muted2);
+      }
+      .text-input:focus {
+        outline: none;
+        border-color: var(--border-focus);
+        box-shadow: 0 0 0 3px rgba(181, 240, 105, 0.08);
+      }
+      .input-hint {
+        margin-top: 5px;
+        font-size: 0.68rem;
+        font-family: var(--font-mono);
+        color: var(--text-muted);
+      }
+      /* ─── Footer ────────────────────────────────────────────────────── */
+      .footer {
+        margin-top: 20px;
         padding-top: 20px;
         border-top: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
       }
-
-      button {
-        background-color: var(--accent);
-        color: white;
+      /* ─── Save Button ───────────────────────────────────────────────── */
+      .btn-save {
+        width: 100%;
+        padding: 11px 24px;
+        background: var(--accent);
         border: none;
-        padding: 10px 24px;
-        border-radius: 6px;
-        font-weight: 600;
+        border-radius: var(--radius-sm);
+        color: #0e1a00;
+        font-family: var(--font-ui);
+        font-size: 0.85rem;
+        font-weight: 700;
+        letter-spacing: 0.02em;
         cursor: pointer;
-        transition: background-color 0.2s;
+        transition:
+          background var(--transition),
+          opacity var(--transition),
+          box-shadow var(--transition),
+          transform var(--transition);
       }
-
-      button:hover {
-        background-color: #45a049;
+      .btn-save:not(:disabled):hover {
+        background: #c8ff70;
+        box-shadow: 0 4px 16px rgba(181, 240, 105, 0.25);
+        transform: translateY(-1px);
       }
-
-      #status {
-        opacity: 0;
+      .btn-save:not(:disabled):active {
+        transform: translateY(0);
+        box-shadow: none;
+      }
+      .btn-save:disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+        background: var(--text-secondary);
+      }
+      /* ─── Status Message ─────────────────────────────────────────────── */
+      .status {
+        font-size: 0.75rem;
+        font-family: var(--font-mono);
+        font-weight: 500;
         color: var(--accent);
+        opacity: 0;
         transition: opacity 0.3s;
-        font-weight: 600;
+        height: 1em;
+        text-align: center;
       }
-
-      #status.show {
+      .status.show {
         opacity: 1;
       }
-
-      .footer-link {
-        text-align: center;
-        margin-top: 20px;
+      .status.error {
+        color: var(--danger);
       }
-
-      .footer-link a {
+      /* ─── GitHub link ────────────────────────────────────────────────── */
+      .github-link {
+        margin-top: 18px;
+        text-align: center;
+      }
+      .github-link a {
         color: var(--text-muted);
         text-decoration: none;
-        font-size: 0.9rem;
+        font-size: 0.72rem;
+        font-family: var(--font-mono);
+        transition: color var(--transition);
       }
-
-      .footer-link a:hover {
-        color: var(--text-main);
+      .github-link a:hover {
+        color: var(--text-secondary);
       }
     </style>
   </head>
   <body>
-    <div class="container">
-      <h1 data-i18n="Open_options">⚙️ Options</h1>
-      <form id="options-form">
-        <div class="setting-group">
-          <label class="toggle-label">
-            <input type="checkbox" id="download-instantly" />
-            <span class="slider"></span>
-            <span data-i18n="optDownloadInstantly"
-              >Download without confirmation dialog</span
-            >
-          </label>
+    <div class="card">
+      <!-- Header -->
+      <div class="header">
+        <div class="header-title">
+          <h1 data-i18n="openOpt">Options</h1>
+          <span class="header-subtitle">Save Image as Type v2</span>
         </div>
-
-        <div class="setting-group">
-          <label class="block-label" data-i18n="optContextMenuLabels"
-            >Context menu labels to show:</label
+        <button class="btn-reset" id="btn-reset" type="button">
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 12 12"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            aria-hidden="true"
           >
-          <label class="toggle-label">
-            <input type="checkbox" name="context-menu-labels" value="JPG" />
-            <span class="slider"></span> JPG
-          </label>
-          <label class="toggle-label">
-            <input type="checkbox" name="context-menu-labels" value="PNG" />
-            <span class="slider"></span> PNG
-          </label>
-          <label class="toggle-label">
-            <input type="checkbox" name="context-menu-labels" value="WebP" />
-            <span class="slider"></span> WebP
-          </label>
-          <label class="toggle-label">
-            <input type="checkbox" name="context-menu-labels" value="GIF" />
-            <span class="slider"></span> GIF
-          </label>
-        </div>
-
-        <div class="setting-group">
-          <label
-            for="default-filename"
-            class="block-label"
-            data-i18n="optDefaultFilename"
-            >Default filename:</label
-          >
-          <input type="text" id="default-filename" placeholder="-" />
-        </div>
-
-        <div class="setting-group">
-          <label class="toggle-label">
-            <input type="checkbox" id="enable-max-length" />
-            <span class="slider"></span>
-            <span data-i18n="optEnableMaxLength">Limit filename length</span>
-          </label>
-
-          <div
-            id="max-length-container"
-            style="
-              margin-top: 10px;
-              opacity: 0.5;
-              pointer-events: none;
-              transition: opacity 0.2s;
-            "
-          >
-            <label
-              for="max-length"
-              data-i18n="optMaxLengthValue"
-              style="
-                display: inline-block;
-                margin-right: 10px;
-                font-weight: 600;
-              "
-              >Max length:</label
-            >
-            <input
-              type="range"
-              id="max-length"
-              min="1"
-              max="255"
-              value="255"
-              style="vertical-align: middle; width: 200px"
+            <path
+              d="M10.2 3.8C9.5 2.4 8 1.5 6 1.5C3.5 1.5 1.5 3.5 1.5 6C1.5 8.5 3.5 10.5 6 10.5C8.5 10.5 10.5 8.5 10.5 6"
+              stroke="currentColor"
+              stroke-width="1.2"
+              stroke-linecap="round"
             />
-            <span
-              id="max-length-display"
-              style="
-                display: inline-block;
-                width: 30px;
-                text-align: right;
-                font-weight: bold;
-                color: var(--accent);
-              "
-              >255</span
+            <path
+              d="M10.5 1.5V4.5H7.5"
+              stroke="currentColor"
+              stroke-width="1.2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+          <span data-i18n="optResetDefaults">Reset to defaults</span>
+        </button>
+      </div>
+
+      <div class="intro-box">
+        <strong data-i18n="optIntroTitle">Save Image as Type v2</strong>
+        <span data-i18n="optIntroDesc">
+          The original extension (with over 1 million downloads!) was recently
+          removed from the Web Store due to spyware. This fork is built from a
+          clean, original Save Image as Type base, with no 'shady' stuff. It
+          also adds support for GIF, along with the options page!
+        </span>
+      </div>
+      <form id="options-form" novalidate>
+        <!-- Section: Image Formats -->
+        <div class="section">
+          <p class="section-label" data-i18n="optContextMenuLabels">
+            Context menu formats
+          </p>
+          <div class="format-grid" id="format-grid"></div>
+        </div>
+        <!-- Section: Behaviour Toggles -->
+        <div class="section">
+          <p class="section-label" data-i18n="optBehaviour">Behaviour</p>
+          <div class="toggle-row">
+            <div class="toggle-text">
+              <div class="toggle-title" data-i18n="optDownloadInstantly">
+                Download images without confirmation dialog
+              </div>
+              <div class="toggle-desc" data-i18n="optDownloadInstantlyDesc">
+                Download images immediately without a save dialog.
+              </div>
+            </div>
+            <label class="switch" data-i18n-aria-label="optDownloadInstantly">
+              <input type="checkbox" id="download-instantly" />
+              <span class="switch-track"></span>
+            </label>
+          </div>
+          <div class="toggle-group">
+            <div class="toggle-row">
+              <div class="toggle-text">
+                <div class="toggle-title" data-i18n="optEnableMaxLength">
+                  Limit filename length
+                </div>
+                <div class="toggle-desc" data-i18n="optEnableMaxLengthDesc">
+                  Truncate filenames to a maximum number of characters.
+                </div>
+              </div>
+              <label class="switch" data-i18n-aria-label="optEnableMaxLength">
+                <input type="checkbox" id="enable-max-length" />
+                <span class="switch-track"></span>
+              </label>
+            </div>
+            <div
+              class="sub-section disabled"
+              id="max-length-container"
+              aria-hidden="true"
             >
+              <span class="sub-section-label" data-i18n="optMaxLengthValue"
+                >Max length:</span
+              >
+              <input
+                type="range"
+                id="max-length"
+                min="1"
+                max="255"
+                value="255"
+              />
+              <span class="slider-value" id="max-length-display">255</span>
+            </div>
+          </div>
+          <div class="toggle-group">
+            <div class="toggle-row">
+              <div class="toggle-text">
+                <div style="display: flex; align-items: center; gap: 6px">
+                  <div class="toggle-title" data-i18n="optMaxAnimationSize">
+                    Max animation size
+                  </div>
+                  <div class="tooltip-wrap">
+                    <span
+                      class="tooltip-icon"
+                      role="img"
+                      data-i18n-aria-label="optTooltipHelpAnimation"
+                      >?</span
+                    >
+                    <div
+                      class="tooltip-bubble"
+                      role="tooltip"
+                      data-i18n="optTooltipAnimationText"
+                    >
+                      Converting animations (like WebP to GIF) takes a lot of
+                      computer memory. This prevents giant files from freezing
+                      your browser. If a GIF fails to save, try raising this
+                      limit.
+                    </div>
+                  </div>
+                </div>
+                <div class="toggle-desc" data-i18n="optMaxAnimationSizeDesc">
+                  Upper limit for animated image conversion memory.
+                </div>
+              </div>
+            </div>
+            <div class="sub-section" id="max-animation-size-container">
+              <span
+                class="sub-section-label"
+                data-i18n="optMaxAnimationSizeValue"
+                >Max size (MB):</span
+              >
+              <input
+                type="range"
+                id="max-animation-size"
+                min="10"
+                max="1000"
+                value="512"
+              />
+              <span class="slider-value" id="max-animation-size-display"
+                >512</span
+              >
+            </div>
           </div>
         </div>
-
-        <div class="actions">
-          <button type="submit" data-i18n="optSave">Save</button>
-          <span id="status" data-i18n="optSavedSuccess">Options saved.</span>
+        <!-- Section: Naming -->
+        <div class="section">
+          <p class="section-label" data-i18n="optNaming">File naming</p>
+          <!-- Filename prefix -->
+          <div class="field-header">
+            <label
+              class="field-label"
+              for="default-filename"
+              data-i18n="optFilenamePrefix"
+              >Filename prefix</label
+            >
+            <div class="tooltip-wrap">
+              <span class="tooltip-icon" role="img" aria-label="Help">?</span>
+              <div class="tooltip-bubble" role="tooltip">
+                <span data-i18n="optFilenamePrefixTooltip"
+                  >Prepended to every saved filename.</span
+                >
+                <span
+                  class="tooltip-example"
+                  data-i18n="optFilenamePrefixExample"
+                  >e.g. "photo" → photo_image.jpg</span
+                >
+              </div>
+            </div>
+          </div>
+          <input
+            type="text"
+            id="default-filename"
+            class="text-input"
+            placeholder="e.g. photo"
+            data-i18n-placeholder="optFilenamePrefixPlaceholder"
+            autocomplete="off"
+            spellcheck="false"
+          />
+          <p class="input-hint" data-i18n="optFilenamePrefixHint">
+            Result: &lt;prefix&gt;_&lt;original-filename&gt;.ext
+          </p>
+          <hr class="field-separator" />
+          <!-- Download sub-folder -->
+          <div class="field-header">
+            <label class="field-label" for="subfolder" data-i18n="optSubfolder"
+              >Download sub-folder</label
+            >
+            <div class="tooltip-wrap">
+              <span
+                class="tooltip-icon"
+                role="img"
+                data-i18n-aria-label="optSubfolderTooltipHelp"
+                >?</span
+              >
+              <div class="tooltip-bubble" role="tooltip">
+                <span data-i18n="optSubfolderTooltip"
+                  >Save into a sub-folder within your browser's Downloads
+                  folder.</span
+                >
+                <span class="tooltip-example" data-i18n="optSubfolderExample"
+                  >e.g. "my-photos/2024" →
+                  Downloads/my-photos/2024/image.jpg</span
+                >
+              </div>
+            </div>
+          </div>
+          <input
+            type="text"
+            id="subfolder"
+            class="text-input"
+            placeholder="e.g. my-photos/2024"
+            data-i18n-placeholder="optSubfolderPlaceholder"
+            autocomplete="off"
+            spellcheck="false"
+          />
+          <!--
+            This hint is intentionally left without data-i18n: options.js updates
+                  it dynamically as the user types, showing the live resolved path.
+            -->
+          <p class="input-hint" id="subfolder-hint">
+            Result: ./&lt;filename&gt;.ext
+          </p>
+        </div>
+        <!-- Footer -->
+        <div class="footer">
+          <button
+            type="submit"
+            class="btn-save"
+            id="btn-save"
+            disabled
+            data-i18n="optSave"
+          >
+            Save changes
+          </button>
+          <span class="status" id="status" role="status" aria-live="polite"
+            >Options saved.</span
+          >
         </div>
       </form>
-
-      <div class="footer-link">
+      <div class="github-link">
         <a
           href="https://github.com/S4adam/Save-Image-as-Type-2024"
           target="_blank"
+          rel="noopener noreferrer"
           data-i18n="optViewGithub"
-          >View this fork on GitHub</a
         >
+          View this fork on GitHub ↗
+        </a>
       </div>
     </div>
-
     <script type="module" src="options.js"></script>
   </body>
 </html>
