@@ -33,8 +33,7 @@ export const CONSTANTS = {
         DISPOSE_MODE: 2,
         FALLBACK_DELAY: 100,
         UNIT_CONVERSION: 1000,
-        TRANSPARENT_INDEX: 'rgba(0,0,0,0)',
-
+        TRANSPARENT_COLOR: 'rgba(0,0,0,0)'
     }
 };
 
@@ -89,8 +88,8 @@ export function sanitizeSubfolder(raw) {
     return (raw ?? '')
         .replace(/\\/g, '/')
         .split('/')
-        .map(seg => seg
-            .replace(/\.\./g, '')
+        .map(seg => 
+            seg.replace(/^\.+$/, '')
             .replace(/[<>:"|?*\x00-\x1f]/g, '')
             .trim()
         )

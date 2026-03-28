@@ -198,12 +198,13 @@ async function encodeAnimatedToGIF(src, maxAnimationSizeMb, callback) {
         await decoder.tracks.ready;
 
         const track = decoder.tracks.selectedTrack;
+        const frameCount = track.frameCount;
+
         const firstResult = await decoder.decode({ frameIndex: 0 });
         const firstFrame = firstResult.image;
-
         const width = firstFrame.displayWidth || firstFrame.codedWidth;
         const height = firstFrame.displayHeight || firstFrame.codedHeight;
-        const frameCount = track.frameCount;
+        firstFrame.close();
 
         const estimatedMb = Math.round((width * height * 4 * frameCount) / (1024 * 1024));
         const maxMb = (Number.isFinite(maxAnimationSizeMb) && maxAnimationSizeMb > 0)
@@ -230,7 +231,7 @@ async function encodeAnimatedToGIF(src, maxAnimationSizeMb, callback) {
             quality: GIF_CONFIG.QUALITY,
             width: canvas.width,
             height: canvas.height,
-            transparent: GIF_CONFIG.TRANSPARENT_INDEX,
+            transparent: GIF_CONFIG.TRANSPARENT_COLOR,
             workerScript: chrome.runtime.getURL(PATHS.GIF_WORKER),
         });
 

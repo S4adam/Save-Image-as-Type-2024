@@ -103,7 +103,7 @@ function buildFilename(src, type, prefs) {
 
         try { parsed = decodeURIComponent(parsed); } catch (_) { /* keep raw */ }
 
-        parsed = parsed.replace(/[\x00-\x7f]+/g, s => s.replace(/[^\w\-.,@ ]+/g, ''));
+        parsed = parsed.replace(/[^\w\u0080-\uffff\-.,@ ]+/g, '');
 
         while (/\.[^0-9a-z]*\./.test(parsed)) {
             parsed = parsed.replace(/\.[^0-9a-z]*\./g, '.');
@@ -187,21 +187,25 @@ function setProgressBadge(percent) {
 async function setupOffscreenDocument(path) {
     const offscreenUrl = chrome.runtime.getURL(path);
 
-    if (chrome.runtime.getContexts) {
+    if ('getContexts' in chrome.runtime) {
         const contexts = await chrome.runtime.getContexts({
             contextTypes: ['OFFSCREEN_DOCUMENT'],
             documentUrls: [offscreenUrl],
         });
         if (contexts.length > 0) return;
     } else {
-        const matched = await clients.matchAll({ includeUncontrolled: true });
-        if (matched.some(c => c.url === offscreenUrl)) return;
+        // fallback for Chrome 109-115
+        const matchedClients = await clients.matchAll({ includeUncontrolled: true });
+        const exists = matchedClients.some(client => client.url === offscreenUrl);
+        if (exists) return;
     }
 
     if (STATE.creatingOffscreen) {
         await Promise.race([
             STATE.creatingOffscreen,
-            new Promise(resolve => setTimeout(resolve, UI.OFFSCREEN_WAIT_MS)),
+            new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('Offscreen creation timed out')), UI.OFFSCREEN_WAIT_MS)
+            )
         ]);
         return;
     }
@@ -209,7 +213,7 @@ async function setupOffscreenDocument(path) {
     try {
         STATE.creatingOffscreen = chrome.offscreen.createDocument({
             url: offscreenUrl,
-            reasons: ['BLOBS', 'WORKERS'],
+            reasons: ['BLOBS'],
             justification: 'Encode image to target format using Canvas API and Web Workers',
         });
         await STATE.creatingOffscreen;
@@ -331,17 +335,21 @@ function buildContextMenu() {
         })
         .catch(err => {
             console.error('[Save Image Extension] Failed to build context menu:', err);
-            STATE.menuBuildPromise = Promise.resolve();
         });
 }
 
 // ─── Lifecycle ────────────────────────────────────────────────────────────────
 
-chrome.runtime.onInstalled.addListener(buildContextMenu);
+chrome.runtime.onInstalled.addListener(() => buildContextMenu());
 
+let menuDebounce = null;
 chrome.storage.onChanged.addListener((changes) => {
     if (changes.contextMenuLabels) {
-        buildContextMenu();
+        // Wait before rebuilding
+        clearTimeout(menuDebounce);
+        menuDebounce = setTimeout(() => {
+            buildContextMenu();
+        }, 300);
     }
 });
 
@@ -355,21 +363,22 @@ chrome.runtime.onMessage.addListener((message, _sender, _sendResponse) => {
         case 'download': {
             const { url, filename, saveAs } = message;
 
-            setProgressBadge(100);
-
             chrome.downloads.download({ url, filename, saveAs }, (id) => {
                 if (url.startsWith('blob:')) {
-                    chrome.runtime.sendMessage({ op: 'revokeBlob', target: 'offscreen', url })
-                        .catch(() => { });
-                }
-
-                if (!id) {
-                    let msg = chrome.i18n.getMessage('errorOnSaving') || 'Download failed';
-                    if (chrome.runtime.lastError) msg += `:\n${chrome.runtime.lastError.message}`;
-                    notify(msg);
+                    chrome.runtime.sendMessage({ op: 'revokeBlob', target: 'offscreen', url }).catch(() => { });
                 }
 
                 OFFSCREEN_QUEUE.current?.resolve();
+
+                if (id) {
+                    setProgressBadge(100);
+                } else {
+                    const lastErr = chrome.runtime.lastError?.message || '';
+                    if (!lastErr.toLowerCase().includes('user canceled')) {
+                        let msg = chrome.i18n.getMessage('errorOnSaving') || 'Download failed';
+                        notify(`${msg}:\n${lastErr}`);
+                    }
+                }
             });
             break;
         }
