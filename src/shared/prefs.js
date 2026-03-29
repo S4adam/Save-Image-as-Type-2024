@@ -21,6 +21,7 @@ export const CONSTANTS = {
         COLOR_SUCCESS: '#4CAF50',
     },
     FILE: {
+        MAX_SAFE_MB: 50,
         MAX_LEN_FALLBACK: 255,
         DEFAULT_NAME: 'image',
         SCREENSHOT_NAME: 'screenshot',

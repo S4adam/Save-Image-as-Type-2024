@@ -199,9 +199,9 @@ async function encodeAnimatedToGIF(src, maxAnimationSizeMb, callback) {
 
         const track = decoder.tracks.selectedTrack;
         const frameCount = track.frameCount;
-
         const firstResult = await decoder.decode({ frameIndex: 0 });
         const firstFrame = firstResult.image;
+
         const width = firstFrame.displayWidth || firstFrame.codedWidth;
         const height = firstFrame.displayHeight || firstFrame.codedHeight;
         firstFrame.close();
@@ -212,7 +212,6 @@ async function encodeAnimatedToGIF(src, maxAnimationSizeMb, callback) {
             : 512;
 
         if (estimatedMb > maxMb) {
-            firstFrame.close();
             decoder.close();
             notify(
                 `Animation is too large to convert safely (estimated ${estimatedMb} MB). ` +

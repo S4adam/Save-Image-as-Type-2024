@@ -26,7 +26,9 @@ function openOptionsPage() {
  */
 function download(url, filename, saveAs) {
     chrome.downloads.download({ url, filename, saveAs }, (id) => {
-        if (!id) {
+        if (id) {
+            setProgressBadge(100);
+        } else {
             let msg = chrome.i18n.getMessage('errorOnSaving') || 'Download failed';
             if (chrome.runtime.lastError) msg += `:\n${chrome.runtime.lastError.message}`;
             notify(msg);
@@ -36,8 +38,8 @@ function download(url, filename, saveAs) {
 
 /**
  * Fetches an image from a URL and returns it as a base64 Data URL.
- * @param {string} src
- * @returns {Promise<string>}
+ * @param {string} src - The image URL or existing data URL
+ * @returns {Promise<string>} A promise that resolves to the base64 Data URL
  */
 async function fetchAsDataURL(src) {
     if (src.startsWith('data:')) return src;
@@ -47,7 +49,7 @@ async function fetchAsDataURL(src) {
 
     try {
         const res = await fetch(src, {
-            headers: { Accept: 'image/jpeg, image/png, image/gif, image/*;q=0.8' },
+            headers: { Accept: 'image/jpeg, image/png, image/gif, image/webp, image/*;q=0.8' },
             signal: controller.signal,
         });
         clearTimeout(timeoutId);
@@ -55,8 +57,15 @@ async function fetchAsDataURL(src) {
         const blob = await res.blob();
         if (!blob.size) throw new Error('Fetch failed: empty response');
 
+        if (blob.size > FILE.MAX_SAFE_MB * 1024 * 1024) {
+            throw new Error(`Image is too large to convert safely (Max ${FILE.MAX_SAFE_MB}MB).`);
+        }
+
         const buffer = await blob.arrayBuffer();
         const bytes = new Uint8Array(buffer);
+
+        const mimeType = sniffMimeType(bytes) || blob.type || 'image/octet-stream';
+
         let binary = '';
         const chunk = NET.CHUNK_SIZE;
 
@@ -64,12 +73,29 @@ async function fetchAsDataURL(src) {
             binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
         }
 
-        return `data:${blob.type || 'image/jpeg'};base64,${btoa(binary)}`;
+        return `data:${mimeType};base64,${btoa(binary)}`;
     } catch (err) {
         clearTimeout(timeoutId);
         if (err.name === 'AbortError') throw new Error(`Fetch timed out after ${NET.FETCH_TIMEOUT_MS / 1000} seconds`);
         throw err;
     }
+}
+
+/**
+ * Detects image MIME type from magic bytes.
+ * Returns null if the signature is unrecognised.
+ * @param {Uint8Array} bytes
+ * @returns {string|null}
+ */
+function sniffMimeType(bytes) {
+    if (bytes.length >= 3 && bytes[0] === 0xFF && bytes[1] === 0xD8 && bytes[2] === 0xFF) return 'image/jpeg';
+    if (bytes.length >= 4 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4E && bytes[3] === 0x47) return 'image/png';
+    if (bytes.length >= 3 && bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46) return 'image/gif';
+    if (bytes.length >= 2 && bytes[0] === 0x42 && bytes[1] === 0x4D) return 'image/bmp';
+    if (bytes.length >= 12 && bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46 &&
+        bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50) return 'image/webp';
+
+    return null;
 }
 
 // ─── Filename ─────────────────────────────────────────────────────────────────
@@ -156,10 +182,12 @@ function notify(msg) {
         console.error('[Save Image Extension]', msg);
     }
 
+    if (STATE.badgeTimeoutId)
+        clearTimeout(STATE.badgeTimeoutId);
+
     chrome.action.setBadgeBackgroundColor({ color: UI.COLOR_ERROR }).catch(() => { });
     chrome.action.setBadgeText({ text: '!' }).catch(() => { });
 
-    if (STATE.badgeTimeoutId) clearTimeout(STATE.badgeTimeoutId);
     STATE.badgeTimeoutId = setTimeout(() => {
         chrome.action.setBadgeText({ text: '' }).catch(() => { });
     }, UI.BADGE_DURATION_MS);
@@ -174,6 +202,9 @@ function setProgressBadge(percent) {
         chrome.action.setBadgeText({ text: '' }).catch(() => { });
         return;
     }
+    if (percent === 0)
+        return;
+
     chrome.action.setBadgeBackgroundColor({ color: UI.COLOR_SUCCESS }).catch(() => { });
     chrome.action.setBadgeText({ text: `${percent}%` }).catch(() => { });
 }
@@ -434,6 +465,11 @@ chrome.contextMenus.onClicked.addListener(async (info) => {
         f => f.value.toLowerCase() === type.toLowerCase()
     );
     if (!format) return;
+
+    if (STATE.badgeTimeoutId)
+        clearTimeout(STATE.badgeTimeoutId);
+    chrome.action.setBadgeBackgroundColor({ color: '#FFC107' }).catch(() => { });
+    chrome.action.setBadgeText({ text: '...' }).catch(() => { });
 
     const prefs = await getPrefs();
     const filename = buildFilename(srcUrl, type, prefs);
