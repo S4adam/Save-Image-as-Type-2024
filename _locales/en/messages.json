@@ -45,7 +45,7 @@
     "description": "Heading text in the introduction section of the options page."
   },
   "optIntroDesc": {
-    "message": "The original extension (with over 1 million downloads!) was recently removed from the Web Store due to spyware. This fork is built from a clean, original Save Image as Type base, with no 'shady' stuff. It also adds support for GIF, along with the options page! No data is collected & all processing is done locally in your browser, and the source code is available on the GitHub (link at the bottom).",
+    "message": "The original extension (with over 1 million downloads!) was recently removed from the Web Store due to spyware. This fork is built from a clean, original Save Image as Type base, with no 'shady' stuff. It also adds support for e.g. GIF, along with the options page! No data is collected & all processing is done locally in the browser, and the source code is available on the GitHub (see footer).",
     "description": "Paragraph text in the introduction section of the options page."
     },
 

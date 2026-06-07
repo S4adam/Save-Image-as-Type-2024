@@ -45,7 +45,7 @@
     "description": "Heading text in the introduction section of the options page."
   },
   "optIntroDesc": {
-    "message": "La extensión original (¡con más de 1 millón de descargas!) fue eliminada recientemente de la Web Store debido a spyware. Este fork está construido a partir de una base limpia y original, sin cosas dudosas. ¡También añade soporte para GIF, junto con la página de opciones! No se recopilan datos, todo el procesamiento se realiza localmente en tu navegador y el código fuente está disponible en GitHub (enlace en la parte inferior).",
+    "message": "La extensión original (¡con más de 1 millón de descargas!) fue eliminada recientemente de la Web Store debido a spyware. Este fork está construido a partir de una base limpia y original de 'Save Image as Type', sin cosas dudosas. ¡También añade soporte para, por ejemplo, GIF, junto con la página de opciones! No se recopilan datos y todo el procesamiento se realiza localmente en el navegador, y el código fuente está disponible en GitHub (ver pie de página).",
     "description": "Paragraph text in the introduction section of the options page."
   },
 
