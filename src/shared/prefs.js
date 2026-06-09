@@ -34,7 +34,7 @@ export const CONSTANTS = {
         DISPOSE_MODE: 2,
         FALLBACK_DELAY: 100,
         UNIT_CONVERSION: 1000,
-        TRANSPARENT_COLOR: 'rgba(0,0,0,0)'
+        TRANSPARENT_COLOR: 0x000000
     }
 };
 

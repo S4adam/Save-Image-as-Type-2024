@@ -190,11 +190,13 @@ async function encodeAnimatedToGIF(src, maxAnimationSizeMb, callback) {
         return;
     }
 
+    let decoder;
+
     try {
         const response = await fetch(src);
         const mimeType = src.slice(src.indexOf(':') + 1, src.indexOf(';'));
 
-        const decoder = new ImageDecoder({ data: response.body, type: mimeType });
+        decoder = new ImageDecoder({ data: response.body, type: mimeType });
         await decoder.tracks.ready;
 
         const track = decoder.tracks.selectedTrack;
@@ -272,5 +274,7 @@ async function encodeAnimatedToGIF(src, maxAnimationSizeMb, callback) {
     } catch (error) {
         console.error('[offscreen] Animation decode error:', error);
         notify('Failed to decode image for GIF conversion.');
+    } finally {
+        decoder?.close();
     }
 }
