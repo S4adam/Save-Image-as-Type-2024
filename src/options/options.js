@@ -12,6 +12,8 @@ const { UI: UI_CONST } = CONSTANTS;
 
 const UI = Object.freeze({
     form: document.getElementById('options-form'),
+    btnCollapse: document.getElementById('btn-collapse'),
+    btnRevert: document.getElementById('btn-revert'),
     btnSave: document.getElementById('btn-save'),
     btnReset: document.getElementById('btn-reset'),
     status: document.getElementById('status'),
@@ -85,6 +87,7 @@ function serializePrefs(prefs) {
 function syncSaveButton() {
     const isDirty = serializeCurrentState() !== savedStateSnapshot;
     UI.btnSave.disabled = !isDirty;
+    UI.btnRevert.disabled = !isDirty;
 }
 
 // ─── Localisation ─────────────────────────────────────────────────────────────
@@ -279,6 +282,17 @@ function renderFormatChips(savedLabels) {
 UI.form.addEventListener('submit', saveOptions);
 UI.btnReset.addEventListener('click', resetToDefaults);
 
+const introBox = document.querySelector('.intro-box');
+
+if (localStorage.getItem('introCollapsed') === 'true') {
+    introBox.classList.add('collapsed');
+}
+
+UI.btnCollapse.addEventListener('click', () => {
+    const isCollapsed = introBox.classList.toggle('collapsed');
+    localStorage.setItem('introCollapsed', isCollapsed);
+});
+
 // Sync slider display values
 UI.maxLength.addEventListener('input', () => {
     UI.maxLengthDisplay.textContent = UI.maxLength.value;
@@ -299,6 +313,13 @@ UI.enableMaxLength.addEventListener('change', () => {
 // All other inputs trigger dirty check
 [UI.downloadInstantly, UI.defaultFilename].forEach(el => {
     el.addEventListener('change', syncSaveButton);
+});
+
+UI.btnRevert.addEventListener('click', () => {
+    if (savedStateSnapshot) {
+        hydrateUI(JSON.parse(savedStateSnapshot));
+        syncSaveButton();
+    }
 });
 
 UI.defaultFilename.addEventListener('input', syncSaveButton);
