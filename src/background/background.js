@@ -43,6 +43,9 @@ function download(url, filename, saveAs) {
  */
 async function fetchAsDataURL(src) {
     if (src.startsWith('data:')) return src;
+    if (src.startsWith('blob:')) {
+        throw new Error('"blob" links are not supported. Try standard saving.');
+    }
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), NET.FETCH_TIMEOUT_MS);
