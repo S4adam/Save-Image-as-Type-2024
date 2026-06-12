@@ -6,6 +6,7 @@ _debug
 _metadata
 dist
 **/*.swp 
+test/
 *.zip
 *.7z
 *.tar.gz
