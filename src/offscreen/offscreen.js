@@ -79,7 +79,7 @@ async function processImage(src, filename, type, saveAs, maxAnimationSizeMb) {
                 break;
             default:
                 // Fallback for native formats (JPG, PNG, WebP)
-                resultData = encodeToCanvasFormat(img, format);
+                resultData = await encodeToCanvasFormat(img, format);
         }
         download(resultData, filename, saveAs);
 
@@ -96,12 +96,13 @@ const loadImage = (src) => new Promise((resolve, reject) => {
 });
 
 /**
- * Renders a static image onto a canvas and returns it as a data URL.
+ * Renders a static image onto a canvas, encodes it synchronously
+ * and returns it as a Blob URL.
  * @param {HTMLImageElement} img
  * @param {object}           format - Entry from SUPPORTED_FORMATS.
- * @returns {string} Data URL
+ * @returns {Promise<string>} Blob URL
  */
-function encodeToCanvasFormat(img, format) {
+async function encodeToCanvasFormat(img, format) {
     const canvas = document.createElement('canvas');
     canvas.width = img.width;
     canvas.height = img.height;
@@ -114,13 +115,18 @@ function encodeToCanvasFormat(img, format) {
     }
 
     ctx.drawImage(img, 0, 0);
-    return canvas.toDataURL(format?.mimeType ?? 'image/png', 1.0);
+
+    const dataUrl = canvas.toDataURL(format?.mimeType ?? 'image/png', 1.0);
+    const response = await fetch(dataUrl);
+    const blob = await response.blob();
+
+    return URL.createObjectURL(blob);
 }
 
 /**
  * Encodes an image into a 32-bit BMP (BGRA).
  * @param {HTMLImageElement} img
- * @returns {string} Data URL
+ * @returns {Promise<string>} Blob URL
  */
 async function encodeToBMP(img) {
     const canvas = document.createElement('canvas');
